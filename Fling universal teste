@@ -1952,14 +1952,14 @@ CFG = {
     FloatOffset        = 0.5,        -- ▸ distância ABAIXO do torso quando ele está parado (studs)
     FloatVelocity      = 250,        -- ▸ força pra CIMA
     FloatStepUp        = 1.0,        -- ▸ oscilação do walkfling (studs que sobe e desce)
-    FloatFrontOffset   = 9,       -- ▸ distância À FRENTE quando o alvo está andando (studs)
-    FloatFallOffset    = 14.0,       -- ▸ distância ABAIXO quando o alvo está CAINDO (studs)
-    FloatFallThreshold = -10,        -- ▸ velocidade pra baixo que conta como "caindo"
+    FloatFrontOffset   =14,       -- ▸ distância À FRENTE quando o alvo está andando (studs)
+    FloatFallOffset    = 14,       -- ▸ distância ABAIXO quando o alvo está CAINDO (studs)
+    FloatFallThreshold = -14,        -- ▸ velocidade pra baixo que conta como "caindo"
 
     -- ═══════════════════════════════════════════════
     -- FLOAT RISING (quando o alvo está SUBINDO/PULANDO)
     -- ═══════════════════════════════════════════════
-    FloatRisingOffset    = 13,     -- ▸ distância ACIMA quando o alvo está subindo (studs)
+    FloatRisingOffset    = 14,     -- ▸ distância ACIMA quando o alvo está subindo (studs)
     FloatRisingThreshold = 5,        -- ▸ velocidade pra cima que conta como "subindo"
 
     -- ═══════════════════════════════════════════════
