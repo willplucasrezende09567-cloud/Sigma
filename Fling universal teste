@@ -279,7 +279,7 @@ local function makeButton(name, text, posX, sizeX, colorA, colorB)
     return btn, str
 end
 
-local Fling2sBtn, F4Stroke = makeButton("Fling2sBtn", "FLING 2.5s", 0, 0.5, Color3.fromRGB(255, 200, 0), Color3.fromRGB(120, 80, 0))
+local Fling2sBtn, F4Stroke = makeButton("Fling2sBtn", "FLING 1.3s", 0, 0.5, Color3.fromRGB(255, 200, 0), Color3.fromRGB(120, 80, 0))
 Fling2sBtn.Position = UDim2.new(0, 15, 0, 196)
 local FlingLoopBtn, FLStroke = makeButton("FlingLoopBtn", "FLING LOOP", 0.5, 0.5, Color3.fromRGB(0, 230, 255), Color3.fromRGB(0, 60, 120))
 FlingLoopBtn.Position = UDim2.new(0.5, 5, 0, 196)
@@ -598,8 +598,14 @@ local function removeBigHitbox()
     State.BigHitboxActive = false
 end
 
+local function shouldHitboxBeActive()
+    if State.AllMode then return true end
+    if State.HitboxToggle and (State.WalkFling or State.FrozenOrbit) then return true end
+    return false
+end
+
 local function syncHitbox()
-    local shouldBeActive = (State.WalkFling or State.FrozenOrbit) and (State.HitboxToggle or State.AllMode)
+    local shouldBeActive = shouldHitboxBeActive()
     if shouldBeActive and not State.BigHitboxActive then
         applyBigHitbox()
     elseif not shouldBeActive and State.BigHitboxActive then
@@ -834,7 +840,7 @@ local function stopWalkFling(keepAllMode)
     State.ActiveFlingTarget = nil
     FlingLoopBtn.Text = "FLING LOOP"
     FLStroke.Color = Color3.fromRGB(0, 230, 255)
-    Fling2sBtn.Text = "FLING 2.5s"
+    Fling2sBtn.Text = "FLING 1.3s"
     F4Stroke.Color = Color3.fromRGB(255, 200, 0)
     if not keepAllMode then
         State.AllMode = false
@@ -866,7 +872,7 @@ local function startWalkFling(mode)
     syncHitbox()
 
     if State.FlingMode == "timed" then
-        Fling2sBtn.Text = "PARAR 2.5s"
+        Fling2sBtn.Text = "PARAR 1.3s"
         F4Stroke.Color = Color3.fromRGB(255, 60, 60)
     else
         FlingLoopBtn.Text = "PARAR LOOP"
@@ -1876,12 +1882,14 @@ AllBtn.MouseButton1Click:Connect(function()
         AllBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
         AllStroke.Color = Color3.fromRGB(120, 120, 140)
         AllGradient.Color = ColorSequence.new(Color3.fromRGB(80, 80, 100), Color3.fromRGB(40, 40, 60))
-        syncHitbox()
 
         if State.WalkFling then stopWalkFling(true) end
         if State.FloatPlayer then stopFloatPlayer() end
         if State.FloatTop then stopFloatTop() end
         if State.FrozenOrbit then stopFrozenOrbit() end
+
+        removeBigHitbox()
+        syncHitbox()
 
         setStatus("ALL desligado", Color3.fromRGB(200, 200, 200))
     else
@@ -1900,6 +1908,8 @@ AllBtn.MouseButton1Click:Connect(function()
         AllBtn.TextColor3 = Color3.fromRGB(150, 255, 150)
         AllStroke.Color = Color3.fromRGB(0, 255, 100)
         AllGradient.Color = ColorSequence.new(Color3.fromRGB(0, 140, 60), Color3.fromRGB(0, 80, 40))
+
+        startWalkFling("loop")
         syncHitbox()
 
         local n = #getAliveOthers()
@@ -1921,9 +1931,9 @@ CFG = {
     -- ═══════════════════════════════════════════════
     -- FLING (arremessar no alvo)
     -- ═══════════════════════════════════════════════
-    FrontOffset      = 10,          -- ▸ distância À FRENTE do alvo quando ele está andando (studs)
+    FrontOffset      = 10,           -- ▸ distância À FRENTE do alvo quando ele está andando (studs)
     FlingVelocity    = 10000,        -- ▸ força do fling (quanto maior, mais longe ele voa)
-    Fling2sDuration  = 1.3,          -- ▸ quanto tempo dura o FLING 2.5s (em segundos)
+    Fling2sDuration  = 1.3,          -- ▸ quanto tempo dura o FLING 1.3s (em segundos)
     MoveVelocityThreshold = 16,      -- ▸ velocidade mínima pra considerar que o alvo está ANDANDO
     StopVelocityThreshold = 3,       -- ▸ velocidade máxima pra considerar que o alvo está PARADO
 
@@ -1952,14 +1962,14 @@ CFG = {
     FloatOffset        = 0.5,        -- ▸ distância ABAIXO do torso quando ele está parado (studs)
     FloatVelocity      = 250,        -- ▸ força pra CIMA
     FloatStepUp        = 1.0,        -- ▸ oscilação do walkfling (studs que sobe e desce)
-    FloatFrontOffset   =10,       -- ▸ distância À FRENTE quando o alvo está andando (studs)
-    FloatFallOffset    = 9,       -- ▸ distância ABAIXO quando o alvo está CAINDO (studs)
+    FloatFrontOffset   = 10,         -- ▸ distância À FRENTE quando o alvo está andando (studs)
+    FloatFallOffset    = 9,          -- ▸ distância ABAIXO quando o alvo está CAINDO (studs)
     FloatFallThreshold = -10,        -- ▸ velocidade pra baixo que conta como "caindo"
 
     -- ═══════════════════════════════════════════════
     -- FLOAT RISING (quando o alvo está SUBINDO/PULANDO)
     -- ═══════════════════════════════════════════════
-    FloatRisingOffset    = 13,     -- ▸ distância ACIMA quando o alvo está subindo (studs)
+    FloatRisingOffset    = 13,       -- ▸ distância ACIMA quando o alvo está subindo (studs)
     FloatRisingThreshold = 5,        -- ▸ velocidade pra cima que conta como "subindo"
 
     -- ═══════════════════════════════════════════════
@@ -2022,6 +2032,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     stopFloatPlayer()
     stopFloatTop()
     if State.FrozenOrbit then stopFrozenOrbit() end
+    removeBigHitbox()
     restoreMyCamera()
 
     local tween = TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
@@ -2076,4 +2087,4 @@ LocalPlayer.CharacterAdded:Connect(function()
     end
 end)
 
-print("[willnzx.mt] GUI carregada — CFG traduzido em pt-BR")
+print("[willnzx.mt] GUI carregada — configs atualizadas")
