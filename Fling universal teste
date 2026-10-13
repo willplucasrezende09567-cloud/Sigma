@@ -1921,9 +1921,9 @@ CFG = {
     -- ═══════════════════════════════════════════════
     -- FLING (arremessar no alvo)
     -- ═══════════════════════════════════════════════
-    FrontOffset      = 14.0,          -- ▸ distância À FRENTE do alvo quando ele está andando (studs)
+    FrontOffset      = 10,          -- ▸ distância À FRENTE do alvo quando ele está andando (studs)
     FlingVelocity    = 10000,        -- ▸ força do fling (quanto maior, mais longe ele voa)
-    Fling2sDuration  = 2.5,          -- ▸ quanto tempo dura o FLING 2.5s (em segundos)
+    Fling2sDuration  = 1.3,          -- ▸ quanto tempo dura o FLING 2.5s (em segundos)
     MoveVelocityThreshold = 16,      -- ▸ velocidade mínima pra considerar que o alvo está ANDANDO
     StopVelocityThreshold = 3,       -- ▸ velocidade máxima pra considerar que o alvo está PARADO
 
@@ -1952,14 +1952,14 @@ CFG = {
     FloatOffset        = 0.5,        -- ▸ distância ABAIXO do torso quando ele está parado (studs)
     FloatVelocity      = 250,        -- ▸ força pra CIMA
     FloatStepUp        = 1.0,        -- ▸ oscilação do walkfling (studs que sobe e desce)
-    FloatFrontOffset   =14,       -- ▸ distância À FRENTE quando o alvo está andando (studs)
-    FloatFallOffset    = 14,       -- ▸ distância ABAIXO quando o alvo está CAINDO (studs)
-    FloatFallThreshold = -14,        -- ▸ velocidade pra baixo que conta como "caindo"
+    FloatFrontOffset   =10,       -- ▸ distância À FRENTE quando o alvo está andando (studs)
+    FloatFallOffset    = 9,       -- ▸ distância ABAIXO quando o alvo está CAINDO (studs)
+    FloatFallThreshold = -10,        -- ▸ velocidade pra baixo que conta como "caindo"
 
     -- ═══════════════════════════════════════════════
     -- FLOAT RISING (quando o alvo está SUBINDO/PULANDO)
     -- ═══════════════════════════════════════════════
-    FloatRisingOffset    = 14,     -- ▸ distância ACIMA quando o alvo está subindo (studs)
+    FloatRisingOffset    = 13,     -- ▸ distância ACIMA quando o alvo está subindo (studs)
     FloatRisingThreshold = 5,        -- ▸ velocidade pra cima que conta como "subindo"
 
     -- ═══════════════════════════════════════════════
