@@ -1,0 +1,2079 @@
+-- Futuristic GUI by willnzx.mt
+-- Para Delta Executor
+
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+pcall(function() CoreGui:FindFirstChild("WillnzxGUI"):Destroy() end)
+pcall(function() CoreGui:FindFirstChild("WillnzxFloatGUI"):Destroy() end)
+
+local State = {
+    WalkFling = false, AllMode = false,
+    AllVersion = "v1",
+    AllSpeedV2 = 0.02,
+    AllTargetStartY = nil,
+    FloatPlayer = false,
+    FloatTop = false,
+    FloatPlayerMoving = false,
+    FloatTopMoving = false,
+    FloatPlayerDir = nil,
+    FloatTopDir = nil,
+    FrozenOrbit = false,
+    OrbitAngle = 0,
+    OrbitStep = false,
+    PrisonParts = nil,
+    PrisonMoving = false,
+    PrisonDir = nil,
+    HitboxToggle = false,
+    Target = nil, AllIndex = 0,
+    MyOriginalCFrame = nil,
+    OrigCamSubject = nil, OrigCamType = nil, Spectating = false,
+    SpikePaused = false,
+    SpikeStartTime = 0,
+    NoclipActive = false,
+    VoidDetected = false,
+    AllTargetStart = 0,
+    BigHitboxActive = false,
+    BigHitboxPart = nil,
+    FlingMode = nil,
+    FlingEndTime = 0,
+    ActiveFlingTarget = nil,
+}
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "WillnzxGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+pcall(function() ScreenGui.Parent = CoreGui end)
+if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 0, 0, 0)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+MainFrame.BackgroundTransparency = 1
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Thickness = 1.5
+Stroke.Color = Color3.fromRGB(0, 200, 255)
+Stroke.Transparency = 1
+Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+Stroke.Parent = MainFrame
+local StrokeGradient = Instance.new("UIGradient")
+StrokeGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 255)),
+})
+StrokeGradient.Parent = Stroke
+
+local BgGradient = Instance.new("UIGradient")
+BgGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 35)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 5, 20)),
+})
+BgGradient.Rotation = 45
+BgGradient.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -60, 0, 22)
+Title.Position = UDim2.new(0, 10, 0, 8)
+Title.BackgroundTransparency = 1
+Title.Text = "by: @willnzx.mt"
+Title.TextColor3 = Color3.fromRGB(0, 230, 255)
+Title.TextSize = 14
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = MainFrame
+local TitleGradient = Instance.new("UIGradient")
+TitleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 0, 255)),
+})
+TitleGradient.Parent = Title
+
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 18, 0, 18)
+MinBtn.Position = UDim2.new(1, -46, 0, 8)
+MinBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+MinBtn.BackgroundTransparency = 0.5
+MinBtn.Text = "■"
+MinBtn.TextSize = 12
+MinBtn.TextColor3 = Color3.fromRGB(0, 230, 255)
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.AutoButtonColor = false
+MinBtn.Parent = MainFrame
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 4)
+local MS = Instance.new("UIStroke", MinBtn)
+MS.Thickness = 1; MS.Color = Color3.fromRGB(0, 230, 255); MS.Transparency = 0.4
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 18, 0, 18)
+CloseBtn.Position = UDim2.new(1, -24, 0, 8)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+CloseBtn.BackgroundTransparency = 0.5
+CloseBtn.Text = "✕"
+CloseBtn.TextSize = 12
+CloseBtn.TextColor3 = Color3.fromRGB(255, 60, 60)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.AutoButtonColor = false
+CloseBtn.Parent = MainFrame
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
+local CS = Instance.new("UIStroke", CloseBtn)
+CS.Thickness = 1; CS.Color = Color3.fromRGB(255, 60, 60); CS.Transparency = 0.4
+
+local V1Btn = Instance.new("TextButton")
+V1Btn.Name = "V1Btn"
+V1Btn.Size = UDim2.new(0.5, -20, 0, 24)
+V1Btn.Position = UDim2.new(0, 15, 0, 34)
+V1Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+V1Btn.BackgroundTransparency = 0.5
+V1Btn.Text = "V1 (tempo+spike)"
+V1Btn.TextSize = 11
+V1Btn.Font = Enum.Font.GothamBold
+V1Btn.TextColor3 = Color3.fromRGB(150, 255, 150)
+V1Btn.AutoButtonColor = false
+V1Btn.Parent = MainFrame
+Instance.new("UICorner", V1Btn).CornerRadius = UDim.new(0, 6)
+local V1Stroke = Instance.new("UIStroke", V1Btn)
+V1Stroke.Thickness = 1.5; V1Stroke.Color = Color3.fromRGB(0, 255, 100); V1Stroke.Transparency = 0.3
+
+local V2Btn = Instance.new("TextButton")
+V2Btn.Name = "V2Btn"
+V2Btn.Size = UDim2.new(0.5, -20, 0, 24)
+V2Btn.Position = UDim2.new(0.5, 5, 0, 34)
+V2Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+V2Btn.BackgroundTransparency = 0.5
+V2Btn.Text = "V2 (TP rápido)"
+V2Btn.TextSize = 11
+V2Btn.Font = Enum.Font.GothamBold
+V2Btn.TextColor3 = Color3.fromRGB(180, 180, 200)
+V2Btn.AutoButtonColor = false
+V2Btn.Parent = MainFrame
+Instance.new("UICorner", V2Btn).CornerRadius = UDim.new(0, 6)
+local V2Stroke = Instance.new("UIStroke", V2Btn)
+V2Stroke.Thickness = 1.5; V2Stroke.Color = Color3.fromRGB(120, 120, 140); V2Stroke.Transparency = 0.3
+
+V1Btn.MouseEnter:Connect(function() TweenService:Create(V1Btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.25}):Play() end)
+V1Btn.MouseLeave:Connect(function() TweenService:Create(V1Btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play() end)
+V2Btn.MouseEnter:Connect(function() TweenService:Create(V2Btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.25}):Play() end)
+V2Btn.MouseLeave:Connect(function() TweenService:Create(V2Btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play() end)
+
+local AllBtn = Instance.new("TextButton")
+AllBtn.Name = "AllBtn"
+AllBtn.Size = UDim2.new(1, -30, 0, 28)
+AllBtn.Position = UDim2.new(0, 15, 0, 64)
+AllBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+AllBtn.BackgroundTransparency = 0.5
+AllBtn.Text = "ALL (OFF)"
+AllBtn.TextSize = 13
+AllBtn.Font = Enum.Font.GothamBold
+AllBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+AllBtn.AutoButtonColor = false
+AllBtn.Parent = MainFrame
+Instance.new("UICorner", AllBtn).CornerRadius = UDim.new(0, 8)
+local AllStroke = Instance.new("UIStroke", AllBtn)
+AllStroke.Thickness = 1.5; AllStroke.Color = Color3.fromRGB(120, 120, 140); AllStroke.Transparency = 0.3
+local AllGradient = Instance.new("UIGradient", AllBtn)
+AllGradient.Color = ColorSequence.new(Color3.fromRGB(80, 80, 100), Color3.fromRGB(40, 40, 60))
+AllGradient.Rotation = 90
+AllGradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 0.5),
+    NumberSequenceKeypoint.new(1, 0.5),
+})
+AllBtn.MouseEnter:Connect(function() TweenService:Create(AllBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.25}):Play() end)
+AllBtn.MouseLeave:Connect(function() TweenService:Create(AllBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play() end)
+
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(0, 100, 0, 16)
+SpeedLabel.Position = UDim2.new(0, 15, 0, 96)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Text = "Velocidade V2 (s):"
+SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+SpeedLabel.TextSize = 10
+SpeedLabel.Font = Enum.Font.Gotham
+SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SpeedLabel.Parent = MainFrame
+
+local SpeedBox = Instance.new("TextBox")
+SpeedBox.Size = UDim2.new(1, -30, 0, 22)
+SpeedBox.Position = UDim2.new(0, 15, 0, 114)
+SpeedBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+SpeedBox.BackgroundTransparency = 0.45
+SpeedBox.PlaceholderText = "0.02"
+SpeedBox.Text = "0.02"
+SpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedBox.TextSize = 11
+SpeedBox.Font = Enum.Font.Gotham
+SpeedBox.ClearTextOnFocus = false
+SpeedBox.Parent = MainFrame
+Instance.new("UICorner", SpeedBox).CornerRadius = UDim.new(0, 6)
+local SpeedStroke = Instance.new("UIStroke", SpeedBox)
+SpeedStroke.Thickness = 1; SpeedStroke.Color = Color3.fromRGB(255, 100, 200); SpeedStroke.Transparency = 0.5
+
+local TargetBox = Instance.new("TextBox")
+TargetBox.Size = UDim2.new(1, -30, 0, 32)
+TargetBox.Position = UDim2.new(0, 15, 0, 144)
+TargetBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+TargetBox.BackgroundTransparency = 0.45
+TargetBox.PlaceholderText = "Nome do jogador (qualquer letra)..."
+TargetBox.PlaceholderColor3 = Color3.fromRGB(120, 130, 160)
+TargetBox.Text = ""
+TargetBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TargetBox.TextSize = 13
+TargetBox.Font = Enum.Font.Gotham
+TargetBox.ClearTextOnFocus = false
+TargetBox.Parent = MainFrame
+Instance.new("UICorner", TargetBox).CornerRadius = UDim.new(0, 8)
+local TBS = Instance.new("UIStroke", TargetBox)
+TBS.Thickness = 1; TBS.Color = Color3.fromRGB(0, 200, 255); TBS.Transparency = 0.5
+
+local TargetStatus = Instance.new("TextLabel")
+TargetStatus.Size = UDim2.new(1, -30, 0, 14)
+TargetStatus.Position = UDim2.new(0, 15, 0, 178)
+TargetStatus.BackgroundTransparency = 1
+TargetStatus.Text = "Alvo: —"
+TargetStatus.TextColor3 = Color3.fromRGB(120, 220, 255)
+TargetStatus.TextSize = 11
+TargetStatus.Font = Enum.Font.Gotham
+TargetStatus.TextXAlignment = Enum.TextXAlignment.Left
+TargetStatus.Parent = MainFrame
+
+local function makeButton(name, text, posX, sizeX, colorA, colorB)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = UDim2.new(sizeX, -20, 0, 34)
+    btn.Position = UDim2.new(posX, 15, 0, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    btn.BackgroundTransparency = 0.5
+    btn.Text = text
+    btn.TextSize = 12
+    btn.Font = Enum.Font.GothamBold
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.AutoButtonColor = false
+    btn.Parent = MainFrame
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    local str = Instance.new("UIStroke", btn)
+    str.Thickness = 1.5; str.Color = colorA; str.Transparency = 0.3
+    local grad = Instance.new("UIGradient", btn)
+    grad.Color = ColorSequence.new(colorA, colorB)
+    grad.Rotation = 90
+    grad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.5),
+        NumberSequenceKeypoint.new(1, 0.5),
+    })
+    btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.25}):Play() end)
+    btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play() end)
+    return btn, str
+end
+
+local Fling2sBtn, F4Stroke = makeButton("Fling2sBtn", "FLING 2.5s", 0, 0.5, Color3.fromRGB(255, 200, 0), Color3.fromRGB(120, 80, 0))
+Fling2sBtn.Position = UDim2.new(0, 15, 0, 196)
+local FlingLoopBtn, FLStroke = makeButton("FlingLoopBtn", "FLING LOOP", 0.5, 0.5, Color3.fromRGB(0, 230, 255), Color3.fromRGB(0, 60, 120))
+FlingLoopBtn.Position = UDim2.new(0.5, 5, 0, 196)
+local FloatBtn, FBStroke2 = makeButton("FloatBtn", "FLOAT PLAYER", 0, 1.0, Color3.fromRGB(200, 0, 200), Color3.fromRGB(70, 0, 80))
+FloatBtn.Size = UDim2.new(1, -30, 0, 34)
+FloatBtn.Position = UDim2.new(0, 15, 0, 234)
+local FloatTopBtn, FTStroke = makeButton("FloatTopBtn", "FLOAT TOP", 0, 1.0, Color3.fromRGB(255, 100, 0), Color3.fromRGB(90, 30, 0))
+FloatTopBtn.Size = UDim2.new(1, -30, 0, 34)
+FloatTopBtn.Position = UDim2.new(0, 15, 0, 272)
+
+local FrozenBtn, FZStroke = makeButton("FrozenBtn", "PRISON", 0, 1.0, Color3.fromRGB(100, 200, 255), Color3.fromRGB(20, 60, 140))
+FrozenBtn.Size = UDim2.new(1, -30, 0, 34)
+FrozenBtn.Position = UDim2.new(0, 15, 0, 310)
+
+local HitboxBtn, HBStroke = makeButton("HitboxBtn", "HITBOX TOGGLE (OFF)", 0, 1.0, Color3.fromRGB(0, 255, 200), Color3.fromRGB(0, 80, 80))
+HitboxBtn.Size = UDim2.new(1, -30, 0, 34)
+HitboxBtn.Position = UDim2.new(0, 15, 0, 348)
+
+-- ============ UTILS ============
+local function findPlayerByQuery(q)
+    if not q or q == "" then return nil end
+    q = tostring(q):lower():gsub("%s", "")
+    local matches = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local n = p.Name:lower():gsub("%s", "")
+            local d = (p.DisplayName or ""):lower():gsub("%s", "")
+            if n:find(q, 1, true) or d:find(q, 1, true) then table.insert(matches, p) end
+        end
+    end
+    local best, bs
+    for _, p in ipairs(matches) do
+        local n = p.Name:lower():gsub("%s", "")
+        local d = (p.DisplayName or ""):lower():gsub("%s", "")
+        local s = math.min(n:len(), d:len() > 0 and d:len() or 9999)
+        if not best or s < bs then best = p; bs = s end
+    end
+    return best
+end
+
+local function isPlayerGone(p)
+    if not p then return true end
+    local ok, parent = pcall(function() return p.Parent end)
+    if not ok or parent ~= Players then return true end
+    if not Players:FindFirstChild(p.Name) then return true end
+    return false
+end
+
+local function getChar(p) if not p then return nil end return p.Character end
+local function getRoot(p) local c = getChar(p) if not c then return nil end return c:FindFirstChild("HumanoidRootPart") end
+local function getHumanoid(p) local c = getChar(p) if not c then return nil end return c:FindFirstChildOfClass("Humanoid") end
+local function getTorso(p)
+    local c = getChar(p)
+    if not c then return nil end
+    return c:FindFirstChild("UpperTorso") or c:FindFirstChild("Torso")
+end
+local function setStatus(t, c)
+    TargetStatus.Text = t
+    TargetStatus.TextColor3 = c or Color3.fromRGB(120, 220, 255)
+end
+
+local function getAliveOthers()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 and p.Character:FindFirstChild("HumanoidRootPart") then
+                table.insert(list, p)
+            end
+        end
+    end
+    return list
+end
+
+local function isDead(p)
+    if not p then return true end
+    local char = p.Character
+    if not char then return true end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return true end
+    return hum.Health <= 0
+end
+
+local function getTargetVelocity(p)
+    local r = getRoot(p)
+    if not r then return 0 end
+    return r.AssemblyLinearVelocity.Magnitude
+end
+
+local function checkSpike(p)
+    local v = getTargetVelocity(p)
+    if v > CFG.SpikeThreshold then return true, v end
+    return false, v
+end
+
+local function wentToVoid(p)
+    local r = getRoot(p)
+    if not r then return false end
+    return r.Position.Y < CFG.VoidY
+end
+
+local function isTargetSafe(target)
+    local r = getRoot(target)
+    if not r then return false end
+    if r.Position.Y < CFG.VoidY + CFG.SpikeResumeMinHeight then
+        return false
+    end
+    if r.AssemblyLinearVelocity.Y < CFG.SpikeResumeMaxFallSpeed then
+        return false
+    end
+    return true
+end
+
+local function getMoveDir(tRoot, tHum)
+    local v = tRoot.AssemblyLinearVelocity
+    local flat = Vector3.new(v.X, 0, v.Z)
+    if flat.Magnitude > 0.1 then
+        return flat.Unit
+    elseif tHum and tHum.MoveDirection.Magnitude > 0.1 then
+        return tHum.MoveDirection.Unit
+    end
+    return Vector3.zero
+end
+
+local function updateLockedDir(currentDir, newDir)
+    if newDir.Magnitude < 0.1 then return currentDir end
+    if not currentDir or currentDir.Magnitude < 0.1 then
+        return newDir
+    end
+    local dot = math.clamp(currentDir:Dot(newDir), -1, 1)
+    local angle = math.deg(math.acos(dot))
+    if angle > CFG.DirectionChangeThreshold then
+        return newDir
+    end
+    return currentDir
+end
+
+local function getSwapTime()
+    if State.AllVersion == "v2" then
+        return State.AllSpeedV2
+    end
+    return CFG.AllSwapTime
+end
+
+local function shouldPauseForSpike(target)
+    local v = getTargetVelocity(target)
+    if v <= CFG.SpikeThreshold then
+        return false, v
+    end
+    if State.SpikePaused and (tick() - State.SpikeStartTime) > CFG.SpikeMaxDuration then
+        if isTargetSafe(target) then
+            return false, v
+        end
+    end
+    return true, v
+end
+
+local function pickTarget(statusLabel)
+    if State.AllMode then
+        local alive = getAliveOthers()
+        if #alive > 0 then
+            if State.AllIndex < 1 or State.AllIndex > #alive then
+                State.AllIndex = 1
+                State.AllTargetStart = tick()
+                State.AllTargetStartY = nil
+            end
+            if State.AllTargetStart == 0 then
+                State.AllTargetStart = tick()
+                State.AllTargetStartY = nil
+            end
+
+            local currentTarget = alive[State.AllIndex]
+            local tRoot = getRoot(currentTarget)
+
+            local shouldSwap = false
+            local reason = "tempo"
+
+            if State.AllVersion == "v1" then
+                if tick() - State.AllTargetStart >= CFG.AllSwapTime then
+                    shouldSwap = true
+                    reason = "tempo"
+                end
+
+                if tRoot then
+                    if not State.AllTargetStartY then
+                        State.AllTargetStartY = tRoot.Position.Y
+                    end
+
+                    local roseTooHigh = tRoot.Position.Y > State.AllTargetStartY + CFG.AllFlyThreshold
+                    local wentVoid = tRoot.Position.Y < CFG.VoidY
+                    local highVel = tRoot.AssemblyLinearVelocity.Magnitude > CFG.SpikeThreshold
+
+                    if roseTooHigh or wentVoid or highVel then
+                        shouldSwap = true
+                        reason = roseTooHigh and "voou ↑" or (wentVoid and "void" or "spike")
+                    end
+                end
+            else
+                if tick() - State.AllTargetStart >= getSwapTime() then
+                    shouldSwap = true
+                    reason = "v2 " .. getSwapTime() .. "s"
+                end
+            end
+
+            if shouldSwap then
+                State.AllIndex = (State.AllIndex % #alive) + 1
+                State.AllTargetStart = tick()
+                State.AllTargetStartY = nil
+                State.SpikePaused = false
+                State.SpikeStartTime = 0
+                if statusLabel then
+                    setStatus(statusLabel .. " [" .. reason .. "]: " .. alive[State.AllIndex].Name .. " (" .. #alive .. ")", Color3.fromRGB(100, 255, 200))
+                end
+            end
+
+            return alive[State.AllIndex]
+        end
+        return nil
+    else
+        return State.Target
+    end
+end
+
+-- ============ NOCLIP ============
+local function applyNoclip()
+    if not CFG.Noclip then return end
+    local char = LocalPlayer.Character
+    if not char then return end
+    for _, d in ipairs(char:GetDescendants()) do
+        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+            if d:GetAttribute("__FlingOrigCanCollide") == nil then
+                d:SetAttribute("__FlingOrigCanCollide", d.CanCollide)
+            end
+            local isTorso = (d.Name == "UpperTorso" or d.Name == "Torso")
+            d.CanCollide = isTorso
+        end
+    end
+    State.NoclipActive = true
+end
+
+local function removeNoclip()
+    if not State.NoclipActive then return end
+    local char = LocalPlayer.Character
+    if char then
+        for _, d in ipairs(char:GetDescendants()) do
+            if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+                local orig = d:GetAttribute("__FlingOrigCanCollide")
+                if orig ~= nil then
+                    d.CanCollide = orig
+                    d:SetAttribute("__FlingOrigCanCollide", nil)
+                end
+            end
+        end
+    end
+    State.NoclipActive = false
+end
+
+-- ============ BIG HITBOX ============
+local function applyBigHitbox()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if State.BigHitboxPart and State.BigHitboxPart.Parent then
+        pcall(function() State.BigHitboxPart:Destroy() end)
+    end
+
+    local box = Instance.new("Part")
+    box.Name = "__BigHitbox"
+    box.Shape = Enum.PartType.Ball
+    box.Size = Vector3.new(CFG.BigHitboxSize, CFG.BigHitboxSize, CFG.BigHitboxSize)
+    box.CanCollide = true
+    box.CanTouch = true
+    box.CanQuery = true
+    box.Anchored = false
+    box.Massless = true
+    box.Transparency = CFG.BigHitboxAlpha
+    box.Color = Color3.fromRGB(0, 200, 255)
+    box.Material = Enum.Material.ForceField
+    box.CFrame = hrp.CFrame
+    box.Parent = workspace
+
+    local weld = Instance.new("WeldConstraint")
+    weld.Name = "__BigHitboxWeld"
+    weld.Part0 = hrp
+    weld.Part1 = box
+    weld.Parent = box
+
+    pcall(function() box:SetNetworkOwner(LocalPlayer) end)
+
+    State.BigHitboxPart = box
+    State.BigHitboxActive = true
+
+    task.spawn(function()
+        while State.BigHitboxActive and box.Parent do
+            local ch = LocalPlayer.Character
+            local h = ch and ch:FindFirstChild("HumanoidRootPart")
+            if h and not box:FindFirstChild("__BigHitboxWeld") then
+                local w = Instance.new("WeldConstraint")
+                w.Name = "__BigHitboxWeld"
+                w.Part0 = h
+                w.Part1 = box
+                w.Parent = box
+            end
+            RunService.Heartbeat:Wait()
+        end
+    end)
+end
+
+local function removeBigHitbox()
+    if State.BigHitboxPart then
+        pcall(function() State.BigHitboxPart:Destroy() end)
+        State.BigHitboxPart = nil
+    end
+    State.BigHitboxActive = false
+end
+
+local function syncHitbox()
+    local shouldBeActive = (State.WalkFling or State.FrozenOrbit) and (State.HitboxToggle or State.AllMode)
+    if shouldBeActive and not State.BigHitboxActive then
+        applyBigHitbox()
+    elseif not shouldBeActive and State.BigHitboxActive then
+        removeBigHitbox()
+    end
+end
+
+local function killFlingVelocity()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local bv = hrp:FindFirstChild("FlingVelocity")
+    if bv then bv:Destroy() end
+end
+
+local function saveMyPosition()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp then State.MyOriginalCFrame = hrp.CFrame end
+end
+
+local function restoreMyCamera()
+    local myChar = LocalPlayer.Character
+    local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+    if myHum then
+        pcall(function()
+            Camera.CameraSubject = myHum
+            Camera.CameraType = Enum.CameraType.Custom
+        end)
+    end
+end
+
+local function cleanupAndReturn()
+    killFlingVelocity()
+    removeNoclip()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hrp and hum then
+        pcall(function() hum.PlatformStand = false end)
+        pcall(function()
+            hrp.AssemblyLinearVelocity  = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+            hrp.Velocity    = Vector3.zero
+            hrp.RotVelocity = Vector3.zero
+        end)
+        if State.MyOriginalCFrame then
+            pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
+        end
+    end
+    State.MyOriginalCFrame = nil
+    State.SpikePaused = false
+    State.SpikeStartTime = 0
+    restoreMyCamera()
+end
+
+-- ============ ESPECTADOR ============
+local function spectate(target)
+    if State.Spectating then return end
+    local char = target and target.Character
+    if not char then return end
+    local tHum = char:FindFirstChildOfClass("Humanoid")
+    if not tHum then return end
+    State.OrigCamSubject = Camera.CameraSubject
+    State.OrigCamType = Camera.CameraType
+    Camera.CameraSubject = tHum
+    Camera.CameraType = Enum.CameraType.Custom
+    State.Spectating = true
+end
+
+local function stopSpectate()
+    if not State.Spectating then return end
+    local myChar = LocalPlayer.Character
+    local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+    if myHum then
+        Camera.CameraSubject = myHum
+        Camera.CameraType = Enum.CameraType.Custom
+    else
+        task.spawn(function()
+            local newChar = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local newHum = newChar:WaitForChild("Humanoid", 3)
+            if newHum then
+                pcall(function()
+                    Camera.CameraSubject = newHum
+                    Camera.CameraType = Enum.CameraType.Custom
+                end)
+            end
+        end)
+    end
+    pcall(function()
+        Camera.CameraType = Enum.CameraType.Custom
+    end)
+    State.OrigCamSubject = nil
+    State.OrigCamType = nil
+    State.Spectating = false
+end
+
+task.spawn(function()
+    while ScreenGui.Parent do
+        if State.Spectating then
+            local t = State.ActiveFlingTarget or State.Target
+            local char = t and t.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum and Camera.CameraSubject ~= hum then
+                pcall(function()
+                    Camera.CameraSubject = hum
+                    Camera.CameraType = Enum.CameraType.Custom
+                end)
+            end
+            if not hum then
+                local myChar = LocalPlayer.Character
+                local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+                if myHum and Camera.CameraSubject ~= myHum then
+                    pcall(function()
+                        Camera.CameraSubject = myHum
+                        Camera.CameraType = Enum.CameraType.Custom
+                    end)
+                end
+            end
+        end
+        task.wait(0.25)
+    end
+end)
+
+-- ============ V1 / V2 ============
+local function applyVersionUI()
+    if State.AllVersion == "v1" then
+        V1Btn.TextColor3 = Color3.fromRGB(150, 255, 150)
+        V1Stroke.Color = Color3.fromRGB(0, 255, 100)
+        V2Btn.TextColor3 = Color3.fromRGB(180, 180, 200)
+        V2Stroke.Color = Color3.fromRGB(120, 120, 140)
+        SpeedBox.TextColor3 = Color3.fromRGB(100, 100, 120)
+        SpeedStroke.Color = Color3.fromRGB(100, 100, 100)
+    else
+        V2Btn.TextColor3 = Color3.fromRGB(255, 150, 255)
+        V2Stroke.Color = Color3.fromRGB(255, 100, 200)
+        V1Btn.TextColor3 = Color3.fromRGB(180, 180, 200)
+        V1Stroke.Color = Color3.fromRGB(120, 120, 140)
+        SpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+        SpeedStroke.Color = Color3.fromRGB(255, 100, 200)
+    end
+end
+
+V1Btn.MouseButton1Click:Connect(function()
+    State.AllVersion = "v1"
+    State.AllTargetStartY = nil
+    applyVersionUI()
+    setStatus("V1 selecionado — 3s + spike + voou (" .. CFG.AllFlyThreshold .. " studs)", Color3.fromRGB(150, 255, 150))
+end)
+
+V2Btn.MouseButton1Click:Connect(function()
+    State.AllVersion = "v2"
+    applyVersionUI()
+    setStatus("V2 selecionado — TP rápido " .. State.AllSpeedV2 .. "s", Color3.fromRGB(255, 150, 255))
+end)
+
+SpeedBox.FocusLost:Connect(function()
+    local n = tonumber(SpeedBox.Text)
+    if n and n > 0 then
+        State.AllSpeedV2 = n
+        setStatus("V2 velocidade: " .. n .. "s", Color3.fromRGB(255, 150, 255))
+    else
+        SpeedBox.Text = tostring(State.AllSpeedV2)
+    end
+end)
+
+applyVersionUI()
+
+local function updateHitboxBtnUI()
+    if State.HitboxToggle then
+        HitboxBtn.Text = "HITBOX TOGGLE (ON)"
+        HitboxBtn.TextColor3 = Color3.fromRGB(150, 255, 220)
+    else
+        HitboxBtn.Text = "HITBOX TOGGLE (OFF)"
+        HitboxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end
+end
+
+HitboxBtn.MouseButton1Click:Connect(function()
+    State.HitboxToggle = not State.HitboxToggle
+    updateHitboxBtnUI()
+    syncHitbox()
+
+    if State.HitboxToggle then
+        setStatus("HITBOX TOGGLE ON — qualquer fling terá hitbox", Color3.fromRGB(150, 255, 220))
+    else
+        setStatus("HITBOX TOGGLE OFF — apenas ALL tem hitbox", Color3.fromRGB(200, 200, 200))
+    end
+end)
+
+updateHitboxBtnUI()
+
+TargetBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local p = findPlayerByQuery(TargetBox.Text)
+    if p then
+        State.Target = p
+        setStatus("Alvo: " .. p.Name, Color3.fromRGB(100, 255, 150))
+    else
+        State.Target = nil
+        if TargetBox.Text == "" then
+            setStatus("Alvo: —", Color3.fromRGB(120, 220, 255))
+        else
+            setStatus("Alvo: nenhum jogador encontrado", Color3.fromRGB(255, 120, 120))
+        end
+    end
+end)
+
+task.spawn(function()
+    while ScreenGui.Parent do
+        if State.Target and isPlayerGone(State.Target) then
+            State.Target = nil
+            if TargetBox.Text ~= "" then
+                TargetBox.Text = ""
+            end
+            setStatus("Alvo saiu do jogo — limpo", Color3.fromRGB(255, 120, 120))
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- ============ WALKFLING ============
+local function stopWalkFling(keepAllMode)
+    State.WalkFling = false
+    State.VoidDetected = false
+    State.AllTargetStart = 0
+    State.AllTargetStartY = nil
+    State.FlingMode = nil
+    State.FlingEndTime = 0
+    State.SpikePaused = false
+    State.SpikeStartTime = 0
+    State.ActiveFlingTarget = nil
+    FlingLoopBtn.Text = "FLING LOOP"
+    FLStroke.Color = Color3.fromRGB(0, 230, 255)
+    Fling2sBtn.Text = "FLING 2.5s"
+    F4Stroke.Color = Color3.fromRGB(255, 200, 0)
+    if not keepAllMode then
+        State.AllMode = false
+        AllBtn.Text = "ALL (OFF)"
+        AllBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+        AllStroke.Color = Color3.fromRGB(120, 120, 140)
+        AllGradient.Color = ColorSequence.new(Color3.fromRGB(80, 80, 100), Color3.fromRGB(40, 40, 60))
+    end
+    syncHitbox()
+    stopSpectate()
+    cleanupAndReturn()
+end
+
+local function startWalkFling(mode)
+    State.WalkFling = true
+    State.VoidDetected = false
+    State.AllTargetStart = tick()
+    State.AllTargetStartY = nil
+    State.SpikePaused = false
+    State.SpikeStartTime = 0
+    State.FlingMode = mode or "loop"
+    if State.FlingMode == "timed" then
+        State.FlingEndTime = tick() + CFG.Fling2sDuration
+    else
+        State.FlingEndTime = 0
+    end
+    saveMyPosition()
+    applyNoclip()
+    syncHitbox()
+
+    if State.FlingMode == "timed" then
+        Fling2sBtn.Text = "PARAR 2.5s"
+        F4Stroke.Color = Color3.fromRGB(255, 60, 60)
+    else
+        FlingLoopBtn.Text = "PARAR LOOP"
+        FLStroke.Color = Color3.fromRGB(255, 60, 60)
+    end
+
+    spectate(State.AllMode and (getAliveOthers()[1] or State.Target) or State.Target)
+
+    task.spawn(function()
+        while State.WalkFling do
+            if State.FlingMode == "timed" and tick() >= State.FlingEndTime then
+                setStatus("Tempo esgotado — parando", Color3.fromRGB(200, 200, 200))
+                State.WalkFling = false
+                break
+            end
+
+            local char = LocalPlayer.Character
+            if not char then
+                LocalPlayer.CharacterAdded:Wait()
+                task.wait(0.2)
+                char = LocalPlayer.Character
+            end
+
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+
+                if hrp and hum then
+                    hum.PlatformStand = true
+
+                    if hrp.Position.Y < CFG.VoidY + 15 then
+                        if State.MyOriginalCFrame then
+                            pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
+                        end
+                        killFlingVelocity()
+                        pcall(function()
+                            hrp.AssemblyLinearVelocity  = Vector3.zero
+                            hrp.AssemblyAngularVelocity = Vector3.zero
+                        end)
+                        setStatus("Me safei do void!", Color3.fromRGB(255, 180, 100))
+                        RunService.Heartbeat:Wait()
+                        continue
+                    end
+
+                    for _, d in ipairs(char:GetDescendants()) do
+                        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+                            local isTorso = (d.Name == "UpperTorso" or d.Name == "Torso")
+                            if d.CanCollide ~= isTorso then
+                                d.CanCollide = isTorso
+                            end
+                        end
+                    end
+
+                    local target = pickTarget("FLING")
+
+                    if target and isPlayerGone(target) then
+                        if State.AllMode then
+                            local alive = getAliveOthers()
+                            if #alive > 0 then
+                                State.AllIndex = (State.AllIndex % #alive) + 1
+                                State.AllTargetStart = tick()
+                                State.AllTargetStartY = nil
+                                State.SpikePaused = false
+                                State.SpikeStartTime = 0
+                                RunService.Heartbeat:Wait()
+                                continue
+                            else
+                                setStatus("Todos saíram — parando", Color3.fromRGB(255, 120, 120))
+                                State.WalkFling = false
+                                break
+                            end
+                        else
+                            setStatus("Alvo saiu do jogo — parando", Color3.fromRGB(255, 120, 120))
+                            State.Target = nil
+                            State.WalkFling = false
+                            break
+                        end
+                    end
+
+                    if not target or isDead(target) then
+                        killFlingVelocity()
+                        pcall(function()
+                            hrp.AssemblyLinearVelocity = Vector3.zero
+                            hrp.AssemblyAngularVelocity = Vector3.zero
+                        end)
+                        State.SpikePaused = false
+                        State.SpikeStartTime = 0
+                        if State.AllMode then
+                            setStatus("Aguardando respawn... (" .. #getAliveOthers() .. " vivos)", Color3.fromRGB(255, 180, 100))
+                        else
+                            setStatus("Alvo morreu — aguardando respawn...", Color3.fromRGB(255, 180, 100))
+                        end
+                        RunService.Heartbeat:Wait()
+                        continue
+                    end
+
+                    if wentToVoid(target) then
+                        if State.AllMode then
+                            local alive = getAliveOthers()
+                            if #alive > 0 then
+                                State.AllIndex = (State.AllIndex % #alive) + 1
+                                State.AllTargetStart = tick()
+                                State.AllTargetStartY = nil
+                                State.SpikePaused = false
+                                State.SpikeStartTime = 0
+                                RunService.Heartbeat:Wait()
+                                continue
+                            end
+                        end
+                        killFlingVelocity()
+                        setStatus("Alvo caiu — aguardando...", Color3.fromRGB(255, 180, 100))
+                        RunService.Heartbeat:Wait()
+                        continue
+                    end
+
+                    if target then
+                        State.ActiveFlingTarget = target
+
+                        local tRoot = getRoot(target)
+                        local tHum = getHumanoid(target)
+                        local tTorso = getTorso(target)
+
+                        if tRoot and tRoot.Parent then
+                            local spiked = false
+                            if State.AllVersion == "v1" then
+                                spiked = shouldPauseForSpike(target)
+                            end
+
+                            if spiked then
+                                if not State.SpikePaused then
+                                    State.SpikePaused = true
+                                    State.SpikeStartTime = tick()
+                                    killFlingVelocity()
+                                    pcall(function()
+                                        hrp.AssemblyLinearVelocity  = Vector3.zero
+                                        hrp.AssemblyAngularVelocity = Vector3.zero
+                                        hrp.Velocity    = Vector3.zero
+                                        hrp.RotVelocity = Vector3.zero
+                                    end)
+                                    setStatus("SPIKE [V1] — pausado (espectando " .. target.Name .. ")", Color3.fromRGB(255, 220, 100))
+                                end
+
+                                if State.MyOriginalCFrame then
+                                    pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
+                                end
+                                hum.PlatformStand = true
+
+                                if not State.Spectating then spectate(target) end
+
+                                RunService.Heartbeat:Wait()
+                                continue
+                            else
+                                if State.SpikePaused then
+                                    State.SpikePaused = false
+                                    State.SpikeStartTime = 0
+                                    setStatus("Spike acabou — retomando!", Color3.fromRGB(100, 255, 150))
+                                end
+
+                                if tRoot.Position.Y < CFG.VoidY + 40 then
+                                    RunService.Heartbeat:Wait()
+                                    continue
+                                end
+
+                                local targetVel = tRoot.AssemblyLinearVelocity.Magnitude
+                                local isMoving = targetVel >= CFG.MoveVelocityThreshold
+                                local moveDir = getMoveDir(tRoot, tHum)
+
+                                local posDestino, olharPara
+
+                                if isMoving and moveDir.Magnitude > 0.1 then
+                                    posDestino = tRoot.Position + (moveDir * CFG.FrontOffset)
+                                    olharPara = (tTorso and tTorso.Position) or tRoot.Position
+                                else
+                                    local tPos = (tTorso and tTorso.Position) or tRoot.Position
+                                    posDestino = tPos
+                                    local tLook = (tTorso and tTorso.CFrame.LookVector) or tRoot.CFrame.LookVector
+                                    olharPara = tPos + tLook
+                                end
+
+                                hrp.CFrame = CFrame.new(posDestino, olharPara)
+
+                                local direcao = (tRoot.Position - hrp.Position)
+                                if direcao.Magnitude < 0.1 then
+                                    direcao = tRoot.CFrame.LookVector
+                                else
+                                    direcao = direcao.Unit
+                                end
+
+                                hrp.Velocity    = direcao * CFG.FlingVelocity
+                                hrp.RotVelocity = Vector3.new(9000, 9000, 9000)
+
+                                local bv = hrp:FindFirstChild("FlingVelocity")
+                                if not bv then
+                                    bv = Instance.new("BodyVelocity")
+                                    bv.Name = "FlingVelocity"
+                                    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                                    bv.Parent = hrp
+                                end
+                                bv.Velocity = direcao * CFG.FlingVelocity
+                            end
+                        end
+                    end
+                end
+            end
+
+            RunService.Heartbeat:Wait()
+        end
+
+        stopWalkFling(State.AllMode)
+    end)
+end
+
+FlingLoopBtn.MouseButton1Click:Connect(function()
+    if State.WalkFling and State.FlingMode == "loop" then
+        stopWalkFling(State.AllMode)
+        return
+    end
+    if State.WalkFling then stopWalkFling(State.AllMode) end
+    if State.FloatPlayer then stopFloatPlayer() end
+    if State.FloatTop then stopFloatTop() end
+    if State.FrozenOrbit then stopFrozenOrbit() end
+
+    if not State.AllMode and not State.Target then
+        setStatus("Selecione um alvo ou ative ALL primeiro!", Color3.fromRGB(255, 120, 120))
+        return
+    end
+    startWalkFling("loop")
+end)
+
+Fling2sBtn.MouseButton1Click:Connect(function()
+    if State.WalkFling and State.FlingMode == "timed" then
+        stopWalkFling(State.AllMode)
+        return
+    end
+    if State.WalkFling then stopWalkFling(State.AllMode) end
+    if State.FloatPlayer then stopFloatPlayer() end
+    if State.FloatTop then stopFloatTop() end
+    if State.FrozenOrbit then stopFrozenOrbit() end
+
+    if not State.AllMode and not State.Target then
+        setStatus("Selecione um alvo ou ative ALL primeiro!", Color3.fromRGB(255, 120, 120))
+        return
+    end
+    startWalkFling("timed")
+end)
+
+-- ============ FLOAT PLAYER ============
+local function stopFloatPlayer()
+    State.FloatPlayer = false
+    State.FloatPlayerMoving = false
+    State.FloatPlayerDir = nil
+    State.SpikePaused = false
+    State.SpikeStartTime = 0
+    State.ActiveFlingTarget = nil
+    FloatBtn.Text = "FLOAT PLAYER"
+    FBStroke2.Color = Color3.fromRGB(200, 0, 200)
+    stopSpectate()
+    cleanupAndReturn()
+end
+
+local function startFloatPlayer()
+    if not State.Target and not State.AllMode then
+        setStatus("Selecione um alvo ou ative ALL primeiro!", Color3.fromRGB(255, 120, 120))
+        return
+    end
+    State.FloatPlayer = true
+    State.FloatPlayerMoving = false
+    State.FloatPlayerDir = nil
+    State.SpikePaused = false
+    State.SpikeStartTime = 0
+    saveMyPosition()
+    applyNoclip()
+    FloatBtn.Text = "PARAR FLOAT"
+    FBStroke2.Color = Color3.fromRGB(255, 60, 60)
+
+    local firstTarget = pickTarget("FLOAT")
+    if firstTarget then spectate(firstTarget) end
+
+    task.spawn(function()
+        local stepUp = false
+
+        while State.FloatPlayer do
+            local char = LocalPlayer.Character
+            if not char then
+                LocalPlayer.CharacterAdded:Wait()
+                task.wait(0.2)
+                char = LocalPlayer.Character
+            end
+
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+
+                if hrp and hum then
+                    hum.PlatformStand = true
+
+                    if hrp.Position.Y < CFG.VoidY + 15 then
+                        if State.MyOriginalCFrame then
+                            pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
+                        end
+                        killFlingVelocity()
+                        pcall(function()
+                            hrp.AssemblyLinearVelocity  = Vector3.zero
+                            hrp.AssemblyAngularVelocity = Vector3.zero
+                        end)
+                        setStatus("Me safei do void!", Color3.fromRGB(255, 180, 100))
+                        RunService.Heartbeat:Wait()
+                        continue
+                    end
+
+                    for _, d in ipairs(char:GetDescendants()) do
+                        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+                            local isTorso = (d.Name == "UpperTorso" or d.Name == "Torso")
+                            if d.CanCollide ~= isTorso then
+                                d.CanCollide = isTorso
+                            end
+                        end
+                    end
+
+                    local target = pickTarget("FLOAT")
+
+                    if target and isPlayerGone(target) then
+                        if State.AllMode then
+                            local alive = getAliveOthers()
+                            if #alive > 0 then
+                                State.AllIndex = (State.AllIndex % #alive) + 1
+                                State.AllTargetStart = tick()
+                                State.AllTargetStartY = nil
+                                State.SpikePaused = false
+                                State.SpikeStartTime = 0
+                                RunService.Heartbeat:Wait()
+                                continue
+                            else
+                                setStatus("Todos saíram — parando", Color3.fromRGB(255, 120, 120))
+                                State.FloatPlayer = false
+                                break
+                            end
+                        else
+                            setStatus("Alvo saiu do jogo — parando", Color3.fromRGB(255, 120, 120))
+                            State.Target = nil
+                            State.FloatPlayer = false
+                            break
+                        end
+                    end
+
+                    if not target or isDead(target) then
+                        killFlingVelocity()
+                        pcall(function()
+                            hrp.AssemblyLinearVelocity = Vector3.zero
+                            hrp.AssemblyAngularVelocity = Vector3.zero
+                        end)
+                        State.SpikePaused = false
+                        State.SpikeStartTime = 0
+                        if State.AllMode then
+                            setStatus("Aguardando respawn... (" .. #getAliveOthers() .. " vivos)", Color3.fromRGB(255, 180, 100))
+                        else
+                            setStatus("Alvo morreu — aguardando respawn...", Color3.fromRGB(255, 180, 100))
+                        end
+                        RunService.Heartbeat:Wait()
+                        continue
+                    end
+
+                    if target then
+                        State.ActiveFlingTarget = target
+                        local tRoot = getRoot(target)
+                        local tHum = getHumanoid(target)
+                        local tTorso = getTorso(target)
+
+                        if tRoot and tRoot.Parent then
+                            local spiked = shouldPauseForSpike(target)
+                            if spiked then
+                                if not State.SpikePaused then
+                                    State.SpikePaused = true
+                                    State.SpikeStartTime = tick()
+                                    killFlingVelocity()
+                                    pcall(function()
+                                        hrp.AssemblyLinearVelocity  = Vector3.zero
+                                        hrp.AssemblyAngularVelocity = Vector3.zero
+                                        hrp.Velocity    = Vector3.zero
+                                        hrp.RotVelocity = Vector3.zero
+                                    end)
+                                    setStatus("SPIKE — float pausado", Color3.fromRGB(255, 220, 100))
+                                end
+
+                                if State.MyOriginalCFrame then
+                                    pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
+                                end
+                                hum.PlatformStand = true
+
+                                if not State.Spectating then spectate(target) end
+
+                                RunService.Heartbeat:Wait()
+                                continue
+                            else
+                                if State.SpikePaused then
+                                    State.SpikePaused = false
+                                    State.SpikeStartTime = 0
+                                    setStatus("Spike acabou — float retomando!", Color3.fromRGB(100, 255, 150))
+                                end
+
+                                stepUp = not stepUp
+                                local yOffset = stepUp and CFG.FloatStepUp or 0
+
+                                local refPos = (tTorso and tTorso.Position) or tRoot.Position
+
+                                local targetVel = tRoot.AssemblyLinearVelocity.Magnitude
+                                if targetVel >= CFG.MoveVelocityThreshold then
+                                    State.FloatPlayerMoving = true
+                                elseif targetVel < CFG.StopVelocityThreshold then
+                                    State.FloatPlayerMoving = false
+                                    State.FloatPlayerDir = nil
+                                end
+                                local isMoving = State.FloatPlayerMoving
+
+                                if isMoving then
+                                    local newDir = getMoveDir(tRoot, tHum)
+                                    State.FloatPlayerDir = updateLockedDir(State.FloatPlayerDir, newDir)
+                                end
+                                local moveDir = State.FloatPlayerDir or Vector3.zero
+                                local hasMoveDir = moveDir.Magnitude > 0.1
+
+                                local velY = tRoot.AssemblyLinearVelocity.Y
+                                local isFalling = velY < CFG.FloatFallThreshold
+                                local isRising = velY > CFG.FloatRisingThreshold
+
+                                local basePos
+                                if isRising and isMoving and hasMoveDir then
+                                    basePos = refPos
+                                        + (moveDir * CFG.FloatFrontOffset)
+                                        + Vector3.new(0, CFG.FloatRisingOffset, 0)
+                                elseif isRising then
+                                    basePos = refPos + Vector3.new(0, CFG.FloatRisingOffset, 0)
+                                elseif isFalling and isMoving and hasMoveDir then
+                                    basePos = refPos
+                                        + (moveDir * CFG.FloatFrontOffset)
+                                        - Vector3.new(0, CFG.FloatFallOffset, 0)
+                                elseif isFalling then
+                                    basePos = refPos - Vector3.new(0, CFG.FloatFallOffset, 0)
+                                elseif isMoving and hasMoveDir then
+                                    basePos = refPos + (moveDir * CFG.FloatFrontOffset)
+                                else
+                                    basePos = refPos - Vector3.new(0, CFG.FloatOffset, 0)
+                                end
+
+                                local posDest = basePos + Vector3.new(0, yOffset, 0)
+
+                                hrp.CFrame = CFrame.lookAt(posDest, posDest + Vector3.new(0, 1, 0))
+
+                                hrp.Velocity    = Vector3.new(0, CFG.FloatVelocity, 0)
+                                hrp.RotVelocity = Vector3.zero
+
+                                local bv = hrp:FindFirstChild("FlingVelocity")
+                                if not bv then
+                                    bv = Instance.new("BodyVelocity")
+                                    bv.Name = "FlingVelocity"
+                                    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                                    bv.Parent = hrp
+                                end
+                                bv.Velocity = Vector3.new(0, CFG.FloatVelocity, 0)
+
+                                local mode
+                                if isRising and isMoving and hasMoveDir then
+                                    mode = "acima+frente (subindo e andando)"
+                                elseif isRising then
+                                    mode = "acima " .. CFG.FloatRisingOffset .. " studs (subindo)"
+                                elseif isFalling and isMoving and hasMoveDir then
+                                    mode = "abaixo+frente (caindo e andando)"
+                                elseif isFalling then
+                                    mode = "abaixo (caindo)"
+                                elseif isMoving and hasMoveDir then
+                                    mode = "à frente " .. CFG.FloatFrontOffset .. " studs [dir travada]"
+                                else
+                                    mode = "abaixo do torso"
+                                end
+                                setStatus("FLOATANDO " .. target.Name .. " ☁️ (" .. mode .. ")", Color3.fromRGB(180, 220, 255))
+                            end
+                        end
+                    end
+                end
+            end
+
+            RunService.Heartbeat:Wait()
+        end
+
+        stopFloatPlayer()
+    end)
+end
+
+FloatBtn.MouseButton1Click:Connect(function()
+    if State.FloatPlayer then
+        stopFloatPlayer()
+    else
+        if State.WalkFling then stopWalkFling(State.AllMode) end
+        if State.FloatTop then stopFloatTop() end
+        if State.FrozenOrbit then stopFrozenOrbit() end
+        startFloatPlayer()
+    end
+end)
+
+-- ============ FLOAT TOP ============
+local function stopFloatTop()
+    State.FloatTop = false
+    State.FloatTopMoving = false
+    State.FloatTopDir = nil
+    State.SpikePaused = false
+    State.SpikeStartTime = 0
+    State.ActiveFlingTarget = nil
+    FloatTopBtn.Text = "FLOAT TOP"
+    FTStroke.Color = Color3.fromRGB(255, 100, 0)
+    stopSpectate()
+    cleanupAndReturn()
+end
+
+local function startFloatTop()
+    if not State.Target and not State.AllMode then
+        setStatus("Selecione um alvo ou ative ALL primeiro!", Color3.fromRGB(255, 120, 120))
+        return
+    end
+    State.FloatTop = true
+    State.FloatTopMoving = false
+    State.FloatTopDir = nil
+    State.SpikePaused = false
+    State.SpikeStartTime = 0
+    saveMyPosition()
+    applyNoclip()
+    FloatTopBtn.Text = "PARAR TOP"
+    FTStroke.Color = Color3.fromRGB(255, 60, 60)
+
+    local firstTarget = pickTarget("TOP")
+    if firstTarget then spectate(firstTarget) end
+
+    task.spawn(function()
+        local stepDown = false
+
+        while State.FloatTop do
+            local char = LocalPlayer.Character
+            if not char then
+                LocalPlayer.CharacterAdded:Wait()
+                task.wait(0.2)
+                char = LocalPlayer.Character
+            end
+
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+
+                if hrp and hum then
+                    hum.PlatformStand = true
+
+                    if hrp.Position.Y < CFG.VoidY + 15 then
+                        if State.MyOriginalCFrame then
+                            pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
+                        end
+                        killFlingVelocity()
+                        pcall(function()
+                            hrp.AssemblyLinearVelocity  = Vector3.zero
+                            hrp.AssemblyAngularVelocity = Vector3.zero
+                        end)
+                        setStatus("Me safei do void!", Color3.fromRGB(255, 180, 100))
+                        RunService.Heartbeat:Wait()
+                        continue
+                    end
+
+                    for _, d in ipairs(char:GetDescendants()) do
+                        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+                            local isTorso = (d.Name == "UpperTorso" or d.Name == "Torso")
+                            if d.CanCollide ~= isTorso then
+                                d.CanCollide = isTorso
+                            end
+                        end
+                    end
+
+                    local target = pickTarget("TOP")
+
+                    if target and isPlayerGone(target) then
+                        if State.AllMode then
+                            local alive = getAliveOthers()
+                            if #alive > 0 then
+                                State.AllIndex = (State.AllIndex % #alive) + 1
+                                State.AllTargetStart = tick()
+                                State.AllTargetStartY = nil
+                                State.SpikePaused = false
+                                State.SpikeStartTime = 0
+                                RunService.Heartbeat:Wait()
+                                continue
+                            else
+                                setStatus("Todos saíram — parando", Color3.fromRGB(255, 120, 120))
+                                State.FloatTop = false
+                                break
+                            end
+                        else
+                            setStatus("Alvo saiu do jogo — parando", Color3.fromRGB(255, 120, 120))
+                            State.Target = nil
+                            State.FloatTop = false
+                            break
+                        end
+                    end
+
+                    if not target or isDead(target) then
+                        killFlingVelocity()
+                        pcall(function()
+                            hrp.AssemblyLinearVelocity = Vector3.zero
+                            hrp.AssemblyAngularVelocity = Vector3.zero
+                        end)
+                        State.SpikePaused = false
+                        State.SpikeStartTime = 0
+                        if State.AllMode then
+                            setStatus("Aguardando respawn... (" .. #getAliveOthers() .. " vivos)", Color3.fromRGB(255, 180, 100))
+                        else
+                            setStatus("Alvo morreu — aguardando respawn...", Color3.fromRGB(255, 180, 100))
+                        end
+                        RunService.Heartbeat:Wait()
+                        continue
+                    end
+
+                    if target then
+                        State.ActiveFlingTarget = target
+                        local tRoot = getRoot(target)
+                        local tHum = getHumanoid(target)
+                        local tTorso = getTorso(target)
+
+                        if tRoot and tRoot.Parent then
+                            local spiked = shouldPauseForSpike(target)
+                            if spiked then
+                                if not State.SpikePaused then
+                                    State.SpikePaused = true
+                                    State.SpikeStartTime = tick()
+                                    killFlingVelocity()
+                                    pcall(function()
+                                        hrp.AssemblyLinearVelocity  = Vector3.zero
+                                        hrp.AssemblyAngularVelocity = Vector3.zero
+                                        hrp.Velocity    = Vector3.zero
+                                        hrp.RotVelocity = Vector3.zero
+                                    end)
+                                    setStatus("SPIKE — top pausado", Color3.fromRGB(255, 220, 100))
+                                end
+
+                                if State.MyOriginalCFrame then
+                                    pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
+                                end
+                                hum.PlatformStand = true
+
+                                if not State.Spectating then spectate(target) end
+
+                                RunService.Heartbeat:Wait()
+                                continue
+                            else
+                                if State.SpikePaused then
+                                    State.SpikePaused = false
+                                    State.SpikeStartTime = 0
+                                    setStatus("Spike acabou — top retomando!", Color3.fromRGB(100, 255, 150))
+                                end
+
+                                stepDown = not stepDown
+                                local yOffset = stepDown and -CFG.FloatTopStepDown or 0
+
+                                local refPos = (tTorso and tTorso.Position) or tRoot.Position
+
+                                local targetVel = tRoot.AssemblyLinearVelocity.Magnitude
+                                if targetVel >= CFG.MoveVelocityThreshold then
+                                    State.FloatTopMoving = true
+                                elseif targetVel < CFG.StopVelocityThreshold then
+                                    State.FloatTopMoving = false
+                                    State.FloatTopDir = nil
+                                end
+                                local isMoving = State.FloatTopMoving
+
+                                if isMoving then
+                                    local newDir = getMoveDir(tRoot, tHum)
+                                    State.FloatTopDir = updateLockedDir(State.FloatTopDir, newDir)
+                                end
+                                local moveDir = State.FloatTopDir or Vector3.zero
+                                local hasMoveDir = moveDir.Magnitude > 0.1
+
+                                local velY = tRoot.AssemblyLinearVelocity.Y
+                                local isRising = velY > CFG.FloatRisingThreshold
+
+                                local basePos
+                                if isRising and isMoving and hasMoveDir then
+                                    basePos = refPos
+                                        + (moveDir * CFG.FloatTopFrontOffset)
+                                        + Vector3.new(0, CFG.FloatRisingOffset, 0)
+                                elseif isRising then
+                                    basePos = refPos + Vector3.new(0, CFG.FloatRisingOffset, 0)
+                                elseif isMoving and hasMoveDir then
+                                    basePos = refPos
+                                        + (moveDir * CFG.FloatTopFrontOffset)
+                                        + Vector3.new(0, CFG.FloatTopOffset, 0)
+                                else
+                                    basePos = refPos + Vector3.new(0, CFG.FloatTopOffset, 0)
+                                end
+
+                                local posDest = basePos + Vector3.new(0, yOffset, 0)
+
+                                hrp.CFrame = CFrame.lookAt(posDest, posDest + Vector3.new(0, -1, 0))
+
+                                hrp.Velocity    = Vector3.new(0, CFG.FloatTopVelocity, 0)
+                                hrp.RotVelocity = Vector3.zero
+
+                                local bv = hrp:FindFirstChild("FlingVelocity")
+                                if not bv then
+                                    bv = Instance.new("BodyVelocity")
+                                    bv.Name = "FlingVelocity"
+                                    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                                    bv.Parent = hrp
+                                end
+                                bv.Velocity = Vector3.new(0, CFG.FloatTopVelocity, 0)
+
+                                local mode
+                                if isRising and isMoving and hasMoveDir then
+                                    mode = "acima+frente (subindo e andando)"
+                                elseif isRising then
+                                    mode = "acima " .. CFG.FloatRisingOffset .. " studs (subindo)"
+                                elseif isMoving and hasMoveDir then
+                                    mode = "à frente " .. CFG.FloatTopFrontOffset .. " studs em cima [dir travada]"
+                                else
+                                    mode = "1 stud acima do torso"
+                                end
+                                setStatus("FLOAT TOP em " .. target.Name .. " ☁️⬇️ (" .. mode .. ")", Color3.fromRGB(255, 180, 120))
+                            end
+                        end
+                    end
+                end
+            end
+
+            RunService.Heartbeat:Wait()
+        end
+
+        stopFloatTop()
+    end)
+end
+
+FloatTopBtn.MouseButton1Click:Connect(function()
+    if State.FloatTop then
+        stopFloatTop()
+    else
+        if State.WalkFling then stopWalkFling(State.AllMode) end
+        if State.FloatPlayer then stopFloatPlayer() end
+        if State.FrozenOrbit then stopFrozenOrbit() end
+        startFloatTop()
+    end
+end)
+
+-- ============ PRISON ============
+local function stopFrozenOrbit()
+    State.FrozenOrbit = false
+    State.OrbitAngle = 0
+    State.OrbitStep = false
+    State.PrisonMoving = false
+    State.PrisonDir = nil
+    State.SpikePaused = false
+    State.SpikeStartTime = 0
+    State.ActiveFlingTarget = nil
+    FrozenBtn.Text = "PRISON"
+    FZStroke.Color = Color3.fromRGB(100, 200, 255)
+
+    if State.PrisonParts then
+        for _, p in ipairs(State.PrisonParts) do
+            pcall(function() p:Destroy() end)
+        end
+        State.PrisonParts = nil
+    end
+
+    syncHitbox()
+    stopSpectate()
+    cleanupAndReturn()
+end
+
+local function startFrozenOrbit()
+    if not State.Target and not State.AllMode then
+        setStatus("Selecione um alvo ou ative ALL primeiro!", Color3.fromRGB(255, 120, 120))
+        return
+    end
+    State.FrozenOrbit = true
+    State.OrbitAngle = 0
+    State.OrbitStep = false
+    State.PrisonMoving = false
+    State.PrisonDir = nil
+    State.SpikePaused = false
+    State.SpikeStartTime = 0
+    saveMyPosition()
+    FrozenBtn.Text = "PARAR PRISON"
+    FZStroke.Color = Color3.fromRGB(255, 60, 60)
+
+    local firstTarget = pickTarget("PRISON")
+    if firstTarget then spectate(firstTarget) end
+
+    task.spawn(function()
+        local prisonParts = {}
+        local offsetAngles = {}
+
+        local function clearPrison()
+            for _, p in ipairs(prisonParts) do
+                pcall(function() p:Destroy() end)
+            end
+            prisonParts = {}
+            offsetAngles = {}
+        end
+
+        local function createPrison()
+            clearPrison()
+
+            local count = CFG.PrisonPartCount
+            local psize = CFG.PrisonPartSize
+
+            for i = 1, count do
+                local angle = ((i - 1) / count) * math.pi * 2
+                table.insert(offsetAngles, angle)
+
+                local box = Instance.new("Part")
+                box.Name = "__PrisonHitbox_" .. i
+                box.Shape = Enum.PartType.Ball
+                box.Size = Vector3.new(psize, psize, psize)
+                box.CanCollide = true
+                box.CanTouch = true
+                box.CanQuery = true
+                box.Anchored = false
+                box.Massless = false
+                box.CustomPhysicalProperties = PhysicalProperties.new(50, 0.3, 0.5, 1, 1)
+                box.Transparency = CFG.PrisonAlpha
+                box.Color = Color3.fromRGB(100, 200, 255)
+                box.Material = Enum.Material.ForceField
+                box.CFrame = CFrame.new(0, -1000, 0)
+                box.Parent = workspace
+
+                pcall(function() box:SetNetworkOwner(LocalPlayer) end)
+
+                table.insert(prisonParts, box)
+            end
+
+            State.PrisonParts = prisonParts
+        end
+
+        createPrison()
+
+        while State.FrozenOrbit do
+            local char = LocalPlayer.Character
+            local myHrp = char and char:FindFirstChild("HumanoidRootPart")
+            local myHum = char and char:FindFirstChildOfClass("Humanoid")
+
+            if myHrp then
+                pcall(function()
+                    myHrp.AssemblyLinearVelocity = Vector3.zero
+                    myHrp.AssemblyAngularVelocity = Vector3.zero
+                    myHrp.Velocity = Vector3.zero
+                    myHrp.RotVelocity = Vector3.zero
+                end)
+                if myHrp.Position.Y < CFG.VoidY + 15 and State.MyOriginalCFrame then
+                    pcall(function() myHrp.CFrame = State.MyOriginalCFrame end)
+                end
+            end
+
+            local target = pickTarget("PRISON")
+
+            if target and isPlayerGone(target) then
+                if State.AllMode then
+                    local alive = getAliveOthers()
+                    if #alive > 0 then
+                        State.AllIndex = (State.AllIndex % #alive) + 1
+                        State.AllTargetStart = tick()
+                        State.AllTargetStartY = nil
+                        State.SpikePaused = false
+                        State.SpikeStartTime = 0
+                        RunService.Heartbeat:Wait()
+                        continue
+                    else
+                        setStatus("Todos saíram — parando", Color3.fromRGB(255, 120, 120))
+                        State.FrozenOrbit = false
+                        break
+                    end
+                else
+                    setStatus("Alvo saiu do jogo — parando", Color3.fromRGB(255, 120, 120))
+                    State.Target = nil
+                    State.FrozenOrbit = false
+                    break
+                end
+            end
+
+            if not target or isDead(target) then
+                setStatus(State.AllMode and ("Aguardando respawn... (" .. #getAliveOthers() .. " vivos)") or "Alvo morreu — aguardando respawn...", Color3.fromRGB(255, 180, 100))
+
+                for _, box in ipairs(prisonParts) do
+                    if box and box.Parent then
+                        box.CFrame = CFrame.new(0, -1000, 0)
+                    end
+                end
+
+                RunService.Heartbeat:Wait()
+                continue
+            end
+
+            if wentToVoid(target) then
+                if State.AllMode then
+                    local alive = getAliveOthers()
+                    if #alive > 0 then
+                        State.AllIndex = (State.AllIndex % #alive) + 1
+                        State.AllTargetStart = tick()
+                        State.AllTargetStartY = nil
+                        State.SpikePaused = false
+                        State.SpikeStartTime = 0
+                        RunService.Heartbeat:Wait()
+                        continue
+                    end
+                end
+                setStatus("Alvo caiu — aguardando...", Color3.fromRGB(255, 180, 100))
+
+                for _, box in ipairs(prisonParts) do
+                    if box and box.Parent then
+                        box.CFrame = CFrame.new(0, -1000, 0)
+                    end
+                end
+                RunService.Heartbeat:Wait()
+                continue
+            end
+
+            if target then
+                State.ActiveFlingTarget = target
+                local tRoot = getRoot(target)
+                local tHum = getHumanoid(target)
+                local tTorso = getTorso(target)
+
+                if tRoot and tRoot.Parent then
+                    local refPos = (tTorso and tTorso.Position) or tRoot.Position
+
+                    local vel = tRoot.AssemblyLinearVelocity
+                    local velFlat = Vector3.new(vel.X, 0, vel.Z)
+                    local speed = velFlat.Magnitude
+
+                    if speed >= CFG.MoveVelocityThreshold then
+                        State.PrisonMoving = true
+                    elseif speed < CFG.StopVelocityThreshold then
+                        State.PrisonMoving = false
+                        State.PrisonDir = nil
+                    end
+                    local isMoving = State.PrisonMoving
+
+                    if isMoving then
+                        local newDir = getMoveDir(tRoot, tHum)
+                        State.PrisonDir = updateLockedDir(State.PrisonDir, newDir)
+                    end
+                    local moveDir = State.PrisonDir or Vector3.zero
+                    local hasMoveDir = moveDir.Magnitude > 0.1
+
+                    local prediction = Vector3.zero
+                    if speed > 1 then
+                        prediction = velFlat * CFG.PrisonPredictionTime
+                    end
+
+                    local frontOffset = Vector3.zero
+                    if isMoving and hasMoveDir then
+                        frontOffset = moveDir * CFG.PrisonFrontOffset
+                    end
+
+                    local futurePos = refPos + prediction + frontOffset
+
+                    local lookDir
+                    if isMoving and hasMoveDir then
+                        lookDir = moveDir
+                    else
+                        lookDir = tRoot.CFrame.LookVector
+                    end
+
+                    local radius = CFG.PrisonRadius
+
+                    for i, box in ipairs(prisonParts) do
+                        if box and box.Parent then
+                            local angle = offsetAngles[i]
+                            local off = Vector3.new(
+                                math.cos(angle) * radius,
+                                0,
+                                math.sin(angle) * radius
+                            )
+                            box.CFrame = CFrame.new(futurePos + off, futurePos + off + lookDir)
+                            box.AssemblyLinearVelocity = Vector3.zero
+                            box.AssemblyAngularVelocity = Vector3.zero
+                        end
+                    end
+
+                    local mode = isMoving and ("🔒 andando (front " .. CFG.PrisonFrontOffset .. ")") or "🔒 parado"
+                    setStatus("PRISON em " .. target.Name .. " " .. mode, Color3.fromRGB(150, 220, 255))
+                end
+            end
+
+            RunService.Heartbeat:Wait()
+        end
+
+        clearPrison()
+    end)
+end
+
+FrozenBtn.MouseButton1Click:Connect(function()
+    if State.FrozenOrbit then
+        stopFrozenOrbit()
+    else
+        if State.WalkFling then stopWalkFling(State.AllMode) end
+        if State.FloatPlayer then stopFloatPlayer() end
+        if State.FloatTop then stopFloatTop() end
+        startFrozenOrbit()
+    end
+end)
+
+-- ============ ALL ============
+AllBtn.MouseButton1Click:Connect(function()
+    if State.AllMode then
+        State.AllMode = false
+        AllBtn.Text = "ALL (OFF)"
+        AllBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+        AllStroke.Color = Color3.fromRGB(120, 120, 140)
+        AllGradient.Color = ColorSequence.new(Color3.fromRGB(80, 80, 100), Color3.fromRGB(40, 40, 60))
+        syncHitbox()
+
+        if State.WalkFling then stopWalkFling(true) end
+        if State.FloatPlayer then stopFloatPlayer() end
+        if State.FloatTop then stopFloatTop() end
+        if State.FrozenOrbit then stopFrozenOrbit() end
+
+        setStatus("ALL desligado", Color3.fromRGB(200, 200, 200))
+    else
+        if #getAliveOthers() == 0 then
+            setStatus("Nenhum jogador para flingar!", Color3.fromRGB(255, 120, 120))
+            return
+        end
+
+        State.AllMode = true
+        State.AllIndex = 0
+        State.AllTargetStart = 0
+        State.AllTargetStartY = nil
+        State.SpikePaused = false
+        State.SpikeStartTime = 0
+        AllBtn.Text = "ALL (ON)"
+        AllBtn.TextColor3 = Color3.fromRGB(150, 255, 150)
+        AllStroke.Color = Color3.fromRGB(0, 255, 100)
+        AllGradient.Color = ColorSequence.new(Color3.fromRGB(0, 140, 60), Color3.fromRGB(0, 80, 40))
+        syncHitbox()
+
+        local n = #getAliveOthers()
+        local v
+        if State.AllVersion == "v2" then
+            v = "V2 " .. State.AllSpeedV2 .. "s"
+        else
+            v = "V1 " .. CFG.AllSwapTime .. "s + voou"
+        end
+        setStatus("ALL ON [" .. v .. "] — selecione uma função (" .. n .. " jogadores)", Color3.fromRGB(100, 255, 150))
+    end
+end)
+
+-- ════════════════════════════════════════════════════════════
+-- ═══════════════ CONFIGS — TRADUZIDO EM PT-BR ═══════════════
+-- ════════════════════════════════════════════════════════════
+CFG = {
+
+    -- ═══════════════════════════════════════════════
+    -- FLING (arremessar no alvo)
+    -- ═══════════════════════════════════════════════
+    FrontOffset      = 9.0,          -- ▸ distância À FRENTE do alvo quando ele está andando (studs)
+    FlingVelocity    = 10000,        -- ▸ força do fling (quanto maior, mais longe ele voa)
+    Fling2sDuration  = 2.5,          -- ▸ quanto tempo dura o FLING 2.5s (em segundos)
+    MoveVelocityThreshold = 16,      -- ▸ velocidade mínima pra considerar que o alvo está ANDANDO
+    StopVelocityThreshold = 3,       -- ▸ velocidade máxima pra considerar que o alvo está PARADO
+
+    -- ═══════════════════════════════════════════════
+    -- ALL V1 (modo tempo + spike + voou)
+    -- ═══════════════════════════════════════════════
+    AllSwapTime      = 3.0,          -- ▸ quanto tempo fica em cada pessoa antes de trocar (segundos)
+    AllFlyThreshold  = 20,           -- ▸ se o alvo subir +20 studs, troca pro próximo
+
+    -- ═══════════════════════════════════════════════
+    -- SPIKE (quando o alvo voa muito rápido)
+    -- ═══════════════════════════════════════════════
+    SpikeMaxDuration      = 4.0,     -- ▸ tempo MÁXIMO pausado esperando o spike acabar (segundos)
+    SpikeResumeMinHeight  = 50,      -- ▸ o alvo precisa estar X studs acima do void pra ser seguro
+    SpikeResumeMaxFallSpeed = -50,   -- ▸ se ele estiver caindo mais rápido que isso, continua pausado
+
+    -- ═══════════════════════════════════════════════
+    -- BIG HITBOX (esfera azul que empurra quem encosta)
+    -- ═══════════════════════════════════════════════
+    BigHitboxSize    = 28,           -- ▸ tamanho da esfera azul (studs)
+    BigHitboxAlpha   = 0.35,         -- ▸ transparência da esfera (0 = opaca, 1 = invisível)
+
+    -- ═══════════════════════════════════════════════
+    -- FLOAT PLAYER (você fica EMBAIXO do alvo empurrando pra cima)
+    -- ═══════════════════════════════════════════════
+    FloatOffset        = 0.5,        -- ▸ distância ABAIXO do torso quando ele está parado (studs)
+    FloatVelocity      = 250,        -- ▸ força pra CIMA
+    FloatStepUp        = 1.0,        -- ▸ oscilação do walkfling (studs que sobe e desce)
+    FloatFrontOffset   = 9,       -- ▸ distância À FRENTE quando o alvo está andando (studs)
+    FloatFallOffset    = 13.0,       -- ▸ distância ABAIXO quando o alvo está CAINDO (studs)
+    FloatFallThreshold = -10,        -- ▸ velocidade pra baixo que conta como "caindo"
+
+    -- ═══════════════════════════════════════════════
+    -- FLOAT RISING (quando o alvo está SUBINDO/PULANDO)
+    -- ═══════════════════════════════════════════════
+    FloatRisingOffset    = 13,     -- ▸ distância ACIMA quando o alvo está subindo (studs)
+    FloatRisingThreshold = 5,        -- ▸ velocidade pra cima que conta como "subindo"
+
+    -- ═══════════════════════════════════════════════
+    -- FLOAT TOP (você fica EM CIMA do alvo empurrando pra baixo)
+    -- ═══════════════════════════════════════════════
+    FloatTopOffset      = 1.0,       -- ▸ distância ACIMA do torso quando ele está parado (studs)
+    FloatTopVelocity    = -250,      -- ▸ força pra BAIXO
+    FloatTopStepDown    = 1.0,       -- ▸ oscilação do walkfling (studs)
+    FloatTopFrontOffset = 13.0,      -- ▸ distância À FRENTE quando o alvo está andando (studs)
+
+    -- ═══════════════════════════════════════════════
+    -- PRISON (gaiola que prende o alvo no lugar)
+    -- ═══════════════════════════════════════════════
+    PrisonRadius        = 2.0,       -- ▸ distância das paredes até o centro do alvo (studs)
+    PrisonPartSize      = 4.5,       -- ▸ tamanho de cada parede da gaiola (studs)
+    PrisonPartCount     = 6,         -- ▸ quantas paredes (6 = hexágono fechado)
+    PrisonAlpha         = 0.55,      -- ▸ transparência das paredes (0 = opaca, 1 = invisível)
+    PrisonPredictionTime = 0.15,     -- ▸ previsão do ping (segundos) - ajuda a acertar o alvo
+    PrisonFrontOffset   = 13.0,      -- ▸ distância À FRENTE quando o alvo está andando (studs)
+
+    -- ═══════════════════════════════════════════════
+    -- TRAVA DE DIREÇÃO (impede de ficar orbitando o alvo)
+    -- ═══════════════════════════════════════════════
+    DirectionChangeThreshold = 60,   -- ▸ ângulo (graus) que o alvo precisa virar pra atualizar a direção
+
+    -- ═══════════════════════════════════════════════
+    -- DETECÇÃO (limites do mundo)
+    -- ═══════════════════════════════════════════════
+    VoidY            = -80,          -- ▸ se cair abaixo desse Y, é considerado VOID (morreu)
+    SpikeThreshold   = 320,          -- ▸ velocidade acima disso = spike (alvo voando)
+
+    -- ═══════════════════════════════════════════════
+    -- OUTROS
+    -- ═══════════════════════════════════════════════
+    Noclip           = true,         -- ▸ true = atravessa paredes (só o torso colide)
+}
+-- ════════════════════════════════════════════════════════════
+-- ⚠️ NÃO ALTERE NADA ABAIXO DAQUI
+-- ════════════════════════════════════════════════════════════
+
+-- ============ MINIMIZAR ============
+local minimized = false
+local FULL_SIZE = UDim2.new(0, 260, 0, 396)
+local MIN_SIZE  = UDim2.new(0, 260, 0, 34)
+
+MinBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    local target = minimized and MIN_SIZE or FULL_SIZE
+    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = target}):Play()
+    MinBtn.Text = minimized and "▢" or "■"
+end)
+
+MinBtn.MouseEnter:Connect(function() TweenService:Create(MinBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.2}):Play() end)
+MinBtn.MouseLeave:Connect(function() TweenService:Create(MinBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play() end)
+CloseBtn.MouseEnter:Connect(function() TweenService:Create(CloseBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.2}):Play() end)
+CloseBtn.MouseLeave:Connect(function() TweenService:Create(CloseBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play() end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    stopWalkFling(false)
+    stopFloatPlayer()
+    stopFloatTop()
+    if State.FrozenOrbit then stopFrozenOrbit() end
+    restoreMyCamera()
+
+    local tween = TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 0, 0, 0),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        BackgroundTransparency = 1
+    })
+    tween:Play()
+    TweenService:Create(Stroke, TweenInfo.new(0.25), {Transparency = 1}):Play()
+    tween.Completed:Wait()
+    ScreenGui:Destroy()
+end)
+
+task.spawn(function()
+    task.wait(0.05)
+    TweenService:Create(MainFrame, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = FULL_SIZE,
+        Position = UDim2.new(0.5, -130, 0.5, -198),
+        BackgroundTransparency = 0.25
+    }):Play()
+    TweenService:Create(Stroke, TweenInfo.new(0.5), {Transparency = 0.2}):Play()
+end)
+
+do
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    MainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    MainFrame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then update(input) end
+    end)
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    if State.BigHitboxActive then
+        task.wait(0.5)
+        applyBigHitbox()
+    end
+end)
+
+print("[willnzx.mt] GUI carregada — CFG traduzido em pt-BR")
