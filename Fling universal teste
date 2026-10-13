@@ -1921,7 +1921,7 @@ CFG = {
     -- ═══════════════════════════════════════════════
     -- FLING (arremessar no alvo)
     -- ═══════════════════════════════════════════════
-    FrontOffset      = 9.0,          -- ▸ distância À FRENTE do alvo quando ele está andando (studs)
+    FrontOffset      = 14.0,          -- ▸ distância À FRENTE do alvo quando ele está andando (studs)
     FlingVelocity    = 10000,        -- ▸ força do fling (quanto maior, mais longe ele voa)
     Fling2sDuration  = 2.5,          -- ▸ quanto tempo dura o FLING 2.5s (em segundos)
     MoveVelocityThreshold = 16,      -- ▸ velocidade mínima pra considerar que o alvo está ANDANDO
@@ -1953,7 +1953,7 @@ CFG = {
     FloatVelocity      = 250,        -- ▸ força pra CIMA
     FloatStepUp        = 1.0,        -- ▸ oscilação do walkfling (studs que sobe e desce)
     FloatFrontOffset   = 9,       -- ▸ distância À FRENTE quando o alvo está andando (studs)
-    FloatFallOffset    = 13.0,       -- ▸ distância ABAIXO quando o alvo está CAINDO (studs)
+    FloatFallOffset    = 14.0,       -- ▸ distância ABAIXO quando o alvo está CAINDO (studs)
     FloatFallThreshold = -10,        -- ▸ velocidade pra baixo que conta como "caindo"
 
     -- ═══════════════════════════════════════════════
@@ -1968,7 +1968,7 @@ CFG = {
     FloatTopOffset      = 1.0,       -- ▸ distância ACIMA do torso quando ele está parado (studs)
     FloatTopVelocity    = -250,      -- ▸ força pra BAIXO
     FloatTopStepDown    = 1.0,       -- ▸ oscilação do walkfling (studs)
-    FloatTopFrontOffset = 13.0,      -- ▸ distância À FRENTE quando o alvo está andando (studs)
+    FloatTopFrontOffset = 14.0,      -- ▸ distância À FRENTE quando o alvo está andando (studs)
 
     -- ═══════════════════════════════════════════════
     -- PRISON (gaiola que prende o alvo no lugar)
@@ -1978,7 +1978,7 @@ CFG = {
     PrisonPartCount     = 6,         -- ▸ quantas paredes (6 = hexágono fechado)
     PrisonAlpha         = 0.55,      -- ▸ transparência das paredes (0 = opaca, 1 = invisível)
     PrisonPredictionTime = 0.15,     -- ▸ previsão do ping (segundos) - ajuda a acertar o alvo
-    PrisonFrontOffset   = 13.0,      -- ▸ distância À FRENTE quando o alvo está andando (studs)
+    PrisonFrontOffset   = 14.0,      -- ▸ distância À FRENTE quando o alvo está andando (studs)
 
     -- ═══════════════════════════════════════════════
     -- TRAVA DE DIREÇÃO (impede de ficar orbitando o alvo)
