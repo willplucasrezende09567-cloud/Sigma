@@ -30,6 +30,10 @@ local State = {
     PrisonMoving = false,
     PrisonDir = nil,
     HitboxToggle = false,
+    ClickFling = false,
+    ClickFlingTool = nil,
+    ClickFlingTarget = nil,
+    ClickFlingActive = false,
     Target = nil, AllIndex = 0,
     MyOriginalCFrame = nil,
     OrigCamSubject = nil, OrigCamType = nil, Spectating = false,
@@ -297,6 +301,11 @@ FrozenBtn.Position = UDim2.new(0, 15, 0, 310)
 local HitboxBtn, HBStroke = makeButton("HitboxBtn", "HITBOX TOGGLE (OFF)", 0, 1.0, Color3.fromRGB(0, 255, 200), Color3.fromRGB(0, 80, 80))
 HitboxBtn.Size = UDim2.new(1, -30, 0, 34)
 HitboxBtn.Position = UDim2.new(0, 15, 0, 348)
+
+-- 🆕 CLICK FLING
+local ClickFlingBtn, CFStroke = makeButton("ClickFlingBtn", "CLICK FLING (OFF)", 0, 1.0, Color3.fromRGB(255, 60, 200), Color3.fromRGB(120, 0, 90))
+ClickFlingBtn.Size = UDim2.new(1, -30, 0, 34)
+ClickFlingBtn.Position = UDim2.new(0, 15, 0, 386)
 
 -- ============ UTILS ============
 local function findPlayerByQuery(q)
@@ -600,7 +609,7 @@ end
 
 local function shouldHitboxBeActive()
     if State.AllMode then return true end
-    if State.HitboxToggle and (State.WalkFling or State.FrozenOrbit) then return true end
+    if State.HitboxToggle and (State.WalkFling or State.FrozenOrbit or State.ClickFlingActive) then return true end
     return false
 end
 
@@ -707,7 +716,7 @@ end
 task.spawn(function()
     while ScreenGui.Parent do
         if State.Spectating then
-            local t = State.ActiveFlingTarget or State.Target
+            local t = State.ActiveFlingTarget or State.Target or State.ClickFlingTarget
             local char = t and t.Character
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             if hum and Camera.CameraSubject ~= hum then
@@ -1094,6 +1103,7 @@ FlingLoopBtn.MouseButton1Click:Connect(function()
     if State.FloatPlayer then stopFloatPlayer() end
     if State.FloatTop then stopFloatTop() end
     if State.FrozenOrbit then stopFrozenOrbit() end
+    if State.ClickFling then stopClickFling() end
 
     if not State.AllMode and not State.Target then
         setStatus("Selecione um alvo ou ative ALL primeiro!", Color3.fromRGB(255, 120, 120))
@@ -1111,6 +1121,7 @@ Fling2sBtn.MouseButton1Click:Connect(function()
     if State.FloatPlayer then stopFloatPlayer() end
     if State.FloatTop then stopFloatTop() end
     if State.FrozenOrbit then stopFrozenOrbit() end
+    if State.ClickFling then stopClickFling() end
 
     if not State.AllMode and not State.Target then
         setStatus("Selecione um alvo ou ative ALL primeiro!", Color3.fromRGB(255, 120, 120))
@@ -1368,6 +1379,7 @@ FloatBtn.MouseButton1Click:Connect(function()
         if State.WalkFling then stopWalkFling(State.AllMode) end
         if State.FloatTop then stopFloatTop() end
         if State.FrozenOrbit then stopFrozenOrbit() end
+        if State.ClickFling then stopClickFling() end
         startFloatPlayer()
     end
 end)
@@ -1612,6 +1624,7 @@ FloatTopBtn.MouseButton1Click:Connect(function()
         if State.WalkFling then stopWalkFling(State.AllMode) end
         if State.FloatPlayer then stopFloatPlayer() end
         if State.FrozenOrbit then stopFrozenOrbit() end
+        if State.ClickFling then stopClickFling() end
         startFloatTop()
     end
 end)
@@ -1870,7 +1883,281 @@ FrozenBtn.MouseButton1Click:Connect(function()
         if State.WalkFling then stopWalkFling(State.AllMode) end
         if State.FloatPlayer then stopFloatPlayer() end
         if State.FloatTop then stopFloatTop() end
+        if State.ClickFling then stopClickFling() end
         startFrozenOrbit()
+    end
+end)
+
+-- ============ CLICK FLING ============
+local clickFlingLastTarget = nil
+
+local function stopClickFling()
+    State.ClickFling = false
+    State.ClickFlingTarget = nil
+    State.ClickFlingActive = false
+    clickFlingLastTarget = nil
+
+    -- remove a tool
+    if State.ClickFlingTool then
+        pcall(function() State.ClickFlingTool:Destroy() end)
+        State.ClickFlingTool = nil
+    end
+    -- remove qualquer tool de click fling do backpack/character
+    local char = LocalPlayer.Character
+    if char then
+        for _, c in ipairs(char:GetChildren()) do
+            if c:IsA("Tool") and c.Name == "ClickFlingTool" then
+                pcall(function() c:Destroy() end)
+            end
+        end
+    end
+    local bp = LocalPlayer:FindFirstChildOfClass("Backpack")
+    if bp then
+        for _, c in ipairs(bp:GetChildren()) do
+            if c:IsA("Tool") and c.Name == "ClickFlingTool" then
+                pcall(function() c:Destroy() end)
+            end
+        end
+    end
+
+    ClickFlingBtn.Text = "CLICK FLING (OFF)"
+    ClickFlingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    syncHitbox()
+    stopSpectate()
+    cleanupAndReturn()
+end
+
+local function clickFlingStart(target)
+    if not target or isDead(target) then return end
+
+    -- se é o mesmo alvo de antes → para (toggle)
+    if State.ClickFlingActive and clickFlingLastTarget == target then
+        State.ClickFlingActive = false
+        State.ClickFlingTarget = nil
+        clickFlingLastTarget = nil
+        killFlingVelocity()
+        removeNoclip()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hrp and hum then
+            pcall(function() hum.PlatformStand = false end)
+            pcall(function()
+                hrp.AssemblyLinearVelocity  = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+                hrp.Velocity    = Vector3.zero
+                hrp.RotVelocity = Vector3.zero
+            end)
+        end
+        setStatus("Click Fling — parado em " .. target.Name, Color3.fromRGB(200, 200, 200))
+        return
+    end
+
+    -- se já está flingando outro alvo, troca
+    if State.ClickFlingActive then
+        killFlingVelocity()
+    end
+
+    State.ClickFlingActive = true
+    State.ClickFlingTarget = target
+    clickFlingLastTarget = target
+    saveMyPosition()
+    applyNoclip()
+    syncHitbox()
+    spectate(target)
+
+    setStatus("CLICK FLING em " .. target.Name, Color3.fromRGB(255, 100, 200))
+end
+
+local function startClickFling()
+    State.ClickFling = true
+    State.ClickFlingTarget = nil
+    State.ClickFlingActive = false
+    clickFlingLastTarget = nil
+
+    ClickFlingBtn.Text = "CLICK FLING (ON)"
+    ClickFlingBtn.TextColor3 = Color3.fromRGB(255, 150, 220)
+
+    -- cria a Tool
+    local tool = Instance.new("Tool")
+    tool.Name = "ClickFlingTool"
+    tool.RequiresHandle = false
+    tool.CanBeDropped = false
+    tool.ToolTip = "Clique em um jogador pra flingar"
+
+    tool.Activated:Connect(function()
+        -- pega o mouse
+        local mouse = LocalPlayer:GetMouse()
+        if not mouse then return end
+        local mouseTarget = mouse.Target
+        if not mouseTarget then return end
+
+        local model = mouseTarget:FindFirstAncestorOfClass("Model")
+        if not model then return end
+
+        local plr = Players:GetPlayerFromCharacter(model)
+        if plr and plr ~= LocalPlayer then
+            clickFlingStart(plr)
+        else
+            setStatus("Click Fling — clique em um jogador!", Color3.fromRGB(255, 200, 100))
+        end
+    end)
+
+    -- coloca no backpack
+    local bp = LocalPlayer:FindFirstChildOfClass("Backpack")
+    if bp then
+        tool.Parent = bp
+    else
+        tool.Parent = LocalPlayer.Character or LocalPlayer
+    end
+
+    State.ClickFlingTool = tool
+
+    setStatus("CLICK FLING ON — use a Tool e clique em alguém!", Color3.fromRGB(255, 150, 220))
+
+    -- loop de fling
+    task.spawn(function()
+        while State.ClickFling do
+            if State.ClickFlingActive and State.ClickFlingTarget then
+                local char = LocalPlayer.Character
+                if not char then
+                    LocalPlayer.CharacterAdded:Wait()
+                    task.wait(0.2)
+                    char = LocalPlayer.Character
+                end
+
+                if char then
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    local target = State.ClickFlingTarget
+
+                    if hrp and hum then
+                        hum.PlatformStand = true
+
+                        -- self void check
+                        if hrp.Position.Y < CFG.VoidY + 15 then
+                            if State.MyOriginalCFrame then
+                                pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
+                            end
+                            killFlingVelocity()
+                            pcall(function()
+                                hrp.AssemblyLinearVelocity  = Vector3.zero
+                                hrp.AssemblyAngularVelocity = Vector3.zero
+                            end)
+                            RunService.Heartbeat:Wait()
+                            continue
+                        end
+
+                        -- noclip
+                        for _, d in ipairs(char:GetDescendants()) do
+                            if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+                                local isTorso = (d.Name == "UpperTorso" or d.Name == "Torso")
+                                if d.CanCollide ~= isTorso then
+                                    d.CanCollide = isTorso
+                                end
+                            end
+                        end
+
+                        -- alvo morreu / saiu / void → desativa o click fling
+                        if not target or isDead(target) or isPlayerGone(target) then
+                            State.ClickFlingActive = false
+                            State.ClickFlingTarget = nil
+                            clickFlingLastTarget = nil
+                            killFlingVelocity()
+                            removeNoclip()
+                            pcall(function() hum.PlatformStand = false end)
+                            pcall(function()
+                                hrp.AssemblyLinearVelocity  = Vector3.zero
+                                hrp.AssemblyAngularVelocity = Vector3.zero
+                            end)
+                            setStatus("Click Fling — alvo morreu/saiu", Color3.fromRGB(255, 120, 120))
+                            RunService.Heartbeat:Wait()
+                            continue
+                        end
+
+                        local tRoot = getRoot(target)
+                        local tHum = getHumanoid(target)
+                        local tTorso = getTorso(target)
+
+                        if tRoot and tRoot.Parent then
+                            -- 🎯 SPIKE detectado → para o fling e não retoma sozinho
+                            local spiked = checkSpike(target)
+                            if spiked then
+                                if State.ClickFlingActive then
+                                    State.ClickFlingActive = false
+                                    State.ClickFlingTarget = nil
+                                    clickFlingLastTarget = nil
+                                    killFlingVelocity()
+                                    removeNoclip()
+                                    pcall(function() hum.PlatformStand = false end)
+                                    pcall(function()
+                                        hrp.AssemblyLinearVelocity  = Vector3.zero
+                                        hrp.AssemblyAngularVelocity = Vector3.zero
+                                        hrp.Velocity    = Vector3.zero
+                                        hrp.RotVelocity = Vector3.zero
+                                    end)
+                                    setStatus("Click Fling — SPIKE detectado, parado em " .. target.Name .. " (clique nele de novo pra retomar)", Color3.fromRGB(255, 220, 100))
+                                end
+                                RunService.Heartbeat:Wait()
+                                continue
+                            end
+
+                            -- fling normal
+                            local targetVel = tRoot.AssemblyLinearVelocity.Magnitude
+                            local isMoving = targetVel >= CFG.MoveVelocityThreshold
+                            local moveDir = getMoveDir(tRoot, tHum)
+
+                            local posDestino, olharPara
+                            if isMoving and moveDir.Magnitude > 0.1 then
+                                posDestino = tRoot.Position + (moveDir * CFG.FrontOffset)
+                                olharPara = (tTorso and tTorso.Position) or tRoot.Position
+                            else
+                                local tPos = (tTorso and tTorso.Position) or tRoot.Position
+                                posDestino = tPos
+                                local tLook = (tTorso and tTorso.CFrame.LookVector) or tRoot.CFrame.LookVector
+                                olharPara = tPos + tLook
+                            end
+
+                            hrp.CFrame = CFrame.new(posDestino, olharPara)
+
+                            local direcao = (tRoot.Position - hrp.Position)
+                            if direcao.Magnitude < 0.1 then
+                                direcao = tRoot.CFrame.LookVector
+                            else
+                                direcao = direcao.Unit
+                            end
+
+                            hrp.Velocity    = direcao * CFG.FlingVelocity
+                            hrp.RotVelocity = Vector3.new(9000, 9000, 9000)
+
+                            local bv = hrp:FindFirstChild("FlingVelocity")
+                            if not bv then
+                                bv = Instance.new("BodyVelocity")
+                                bv.Name = "FlingVelocity"
+                                bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                                bv.Parent = hrp
+                            end
+                            bv.Velocity = direcao * CFG.FlingVelocity
+                        end
+                    end
+                end
+            end
+
+            RunService.Heartbeat:Wait()
+        end
+    end)
+end
+
+ClickFlingBtn.MouseButton1Click:Connect(function()
+    if State.ClickFling then
+        stopClickFling()
+    else
+        if State.WalkFling then stopWalkFling(State.AllMode) end
+        if State.FloatPlayer then stopFloatPlayer() end
+        if State.FloatTop then stopFloatTop() end
+        if State.FrozenOrbit then stopFrozenOrbit() end
+        startClickFling()
     end
 end)
 
@@ -1887,6 +2174,7 @@ AllBtn.MouseButton1Click:Connect(function()
         if State.FloatPlayer then stopFloatPlayer() end
         if State.FloatTop then stopFloatTop() end
         if State.FrozenOrbit then stopFrozenOrbit() end
+        if State.ClickFling then stopClickFling() end
 
         removeBigHitbox()
         syncHitbox()
@@ -1928,91 +2216,55 @@ end)
 -- ════════════════════════════════════════════════════════════
 CFG = {
 
-    -- ═══════════════════════════════════════════════
-    -- FLING (arremessar no alvo)
-    -- ═══════════════════════════════════════════════
-    FrontOffset      = 10,           -- ▸ distância À FRENTE do alvo quando ele está andando (studs)
-    FlingVelocity    = 10000,        -- ▸ força do fling (quanto maior, mais longe ele voa)
-    Fling2sDuration  = 1.3,          -- ▸ quanto tempo dura o FLING 1.3s (em segundos)
-    MoveVelocityThreshold = 16,      -- ▸ velocidade mínima pra considerar que o alvo está ANDANDO
-    StopVelocityThreshold = 3,       -- ▸ velocidade máxima pra considerar que o alvo está PARADO
+    FrontOffset      = 10,
+    FlingVelocity    = 10000,
+    Fling2sDuration  = 1.3,
+    MoveVelocityThreshold = 16,
+    StopVelocityThreshold = 3,
 
-    -- ═══════════════════════════════════════════════
-    -- ALL V1 (modo tempo + spike + voou)
-    -- ═══════════════════════════════════════════════
-    AllSwapTime      = 3.0,          -- ▸ quanto tempo fica em cada pessoa antes de trocar (segundos)
-    AllFlyThreshold  = 20,           -- ▸ se o alvo subir +20 studs, troca pro próximo
+    AllSwapTime      = 3.0,
+    AllFlyThreshold  = 20,
 
-    -- ═══════════════════════════════════════════════
-    -- SPIKE (quando o alvo voa muito rápido)
-    -- ═══════════════════════════════════════════════
-    SpikeMaxDuration      = 4.0,     -- ▸ tempo MÁXIMO pausado esperando o spike acabar (segundos)
-    SpikeResumeMinHeight  = 50,      -- ▸ o alvo precisa estar X studs acima do void pra ser seguro
-    SpikeResumeMaxFallSpeed = -50,   -- ▸ se ele estiver caindo mais rápido que isso, continua pausado
+    SpikeMaxDuration      = 4.0,
+    SpikeResumeMinHeight  = 50,
+    SpikeResumeMaxFallSpeed = -50,
 
-    -- ═══════════════════════════════════════════════
-    -- BIG HITBOX (esfera azul que empurra quem encosta)
-    -- ═══════════════════════════════════════════════
-    BigHitboxSize    = 28,           -- ▸ tamanho da esfera azul (studs)
-    BigHitboxAlpha   = 0.35,         -- ▸ transparência da esfera (0 = opaca, 1 = invisível)
+    BigHitboxSize    = 28,
+    BigHitboxAlpha   = 0.35,
 
-    -- ═══════════════════════════════════════════════
-    -- FLOAT PLAYER (você fica EMBAIXO do alvo empurrando pra cima)
-    -- ═══════════════════════════════════════════════
-    FloatOffset        = 0.5,        -- ▸ distância ABAIXO do torso quando ele está parado (studs)
-    FloatVelocity      = 250,        -- ▸ força pra CIMA
-    FloatStepUp        = 1.0,        -- ▸ oscilação do walkfling (studs que sobe e desce)
-    FloatFrontOffset   = 10,         -- ▸ distância À FRENTE quando o alvo está andando (studs)
-    FloatFallOffset    = 9,          -- ▸ distância ABAIXO quando o alvo está CAINDO (studs)
-    FloatFallThreshold = -10,        -- ▸ velocidade pra baixo que conta como "caindo"
+    FloatOffset        = 0.5,
+    FloatVelocity      = 250,
+    FloatStepUp        = 1.0,
+    FloatFrontOffset   = 10,
+    FloatFallOffset    = 9,
+    FloatFallThreshold = -10,
 
-    -- ═══════════════════════════════════════════════
-    -- FLOAT RISING (quando o alvo está SUBINDO/PULANDO)
-    -- ═══════════════════════════════════════════════
-    FloatRisingOffset    = 13,       -- ▸ distância ACIMA quando o alvo está subindo (studs)
-    FloatRisingThreshold = 5,        -- ▸ velocidade pra cima que conta como "subindo"
+    FloatRisingOffset    = 13,
+    FloatRisingThreshold = 5,
 
-    -- ═══════════════════════════════════════════════
-    -- FLOAT TOP (você fica EM CIMA do alvo empurrando pra baixo)
-    -- ═══════════════════════════════════════════════
-    FloatTopOffset      = 1.0,       -- ▸ distância ACIMA do torso quando ele está parado (studs)
-    FloatTopVelocity    = -250,      -- ▸ força pra BAIXO
-    FloatTopStepDown    = 1.0,       -- ▸ oscilação do walkfling (studs)
-    FloatTopFrontOffset = 14.0,      -- ▸ distância À FRENTE quando o alvo está andando (studs)
+    FloatTopOffset      = 1.0,
+    FloatTopVelocity    = -250,
+    FloatTopStepDown    = 1.0,
+    FloatTopFrontOffset = 14.0,
 
-    -- ═══════════════════════════════════════════════
-    -- PRISON (gaiola que prende o alvo no lugar)
-    -- ═══════════════════════════════════════════════
-    PrisonRadius        = 2.0,       -- ▸ distância das paredes até o centro do alvo (studs)
-    PrisonPartSize      = 4.5,       -- ▸ tamanho de cada parede da gaiola (studs)
-    PrisonPartCount     = 6,         -- ▸ quantas paredes (6 = hexágono fechado)
-    PrisonAlpha         = 0.55,      -- ▸ transparência das paredes (0 = opaca, 1 = invisível)
-    PrisonPredictionTime = 0.15,     -- ▸ previsão do ping (segundos) - ajuda a acertar o alvo
-    PrisonFrontOffset   = 14.0,      -- ▸ distância À FRENTE quando o alvo está andando (studs)
+    PrisonRadius        = 2.0,
+    PrisonPartSize      = 4.5,
+    PrisonPartCount     = 6,
+    PrisonAlpha         = 0.55,
+    PrisonPredictionTime = 0.15,
+    PrisonFrontOffset   = 14.0,
 
-    -- ═══════════════════════════════════════════════
-    -- TRAVA DE DIREÇÃO (impede de ficar orbitando o alvo)
-    -- ═══════════════════════════════════════════════
-    DirectionChangeThreshold = 60,   -- ▸ ângulo (graus) que o alvo precisa virar pra atualizar a direção
+    DirectionChangeThreshold = 60,
 
-    -- ═══════════════════════════════════════════════
-    -- DETECÇÃO (limites do mundo)
-    -- ═══════════════════════════════════════════════
-    VoidY            = -80,          -- ▸ se cair abaixo desse Y, é considerado VOID (morreu)
-    SpikeThreshold   = 320,          -- ▸ velocidade acima disso = spike (alvo voando)
+    VoidY            = -80,
+    SpikeThreshold   = 320,
 
-    -- ═══════════════════════════════════════════════
-    -- OUTROS
-    -- ═══════════════════════════════════════════════
-    Noclip           = true,         -- ▸ true = atravessa paredes (só o torso colide)
+    Noclip           = true,
 }
--- ════════════════════════════════════════════════════════════
--- ⚠️ NÃO ALTERE NADA ABAIXO DAQUI
--- ════════════════════════════════════════════════════════════
 
 -- ============ MINIMIZAR ============
 local minimized = false
-local FULL_SIZE = UDim2.new(0, 260, 0, 396)
+local FULL_SIZE = UDim2.new(0, 260, 0, 434)
 local MIN_SIZE  = UDim2.new(0, 260, 0, 34)
 
 MinBtn.MouseButton1Click:Connect(function()
@@ -2032,6 +2284,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     stopFloatPlayer()
     stopFloatTop()
     if State.FrozenOrbit then stopFrozenOrbit() end
+    if State.ClickFling then stopClickFling() end
     removeBigHitbox()
     restoreMyCamera()
 
@@ -2050,7 +2303,7 @@ task.spawn(function()
     task.wait(0.05)
     TweenService:Create(MainFrame, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = FULL_SIZE,
-        Position = UDim2.new(0.5, -130, 0.5, -198),
+        Position = UDim2.new(0.5, -130, 0.5, -217),
         BackgroundTransparency = 0.25
     }):Play()
     TweenService:Create(Stroke, TweenInfo.new(0.5), {Transparency = 0.2}):Play()
@@ -2085,6 +2338,15 @@ LocalPlayer.CharacterAdded:Connect(function()
         task.wait(0.5)
         applyBigHitbox()
     end
+    -- recria a tool se click fling estiver ativo e morrer
+    if State.ClickFling and not State.ClickFlingTool then
+        task.wait(0.5)
+        if State.ClickFling then
+            stopClickFling()
+            task.wait(0.1)
+            startClickFling()
+        end
+    end
 end)
 
-print("[willnzx.mt] GUI carregada — configs atualizadas")
+print("[willnzx.mt] GUI carregada — CLICK FLING adicionado")
