@@ -23,17 +23,22 @@ local State = {
     FloatTopMoving = false,
     FloatPlayerDir = nil,
     FloatTopDir = nil,
-    FrozenOrbit = false,
-    OrbitAngle = 0,
-    OrbitStep = false,
-    PrisonParts = nil,
-    PrisonMoving = false,
-    PrisonDir = nil,
     HitboxToggle = false,
-    ClickFling = false,
     ClickFlingTool = nil,
+    ClickFlingToolName = nil,
+    ClickFlingMode = nil,
     ClickFlingTarget = nil,
     ClickFlingActive = false,
+    ClickFloatMoving = false,
+    ClickFloatDir = nil,
+    ClickFloatTopMoving = false,
+    ClickFloatTopDir = nil,
+    ClickTargetStartY = nil,
+    ClickAirFrames = 0,
+    FloatPlayerTargetStartY = nil,
+    FloatPlayerAirFrames = 0,
+    FloatTopTargetStartY = nil,
+    FloatTopAirFrames = 0,
     Target = nil, AllIndex = 0,
     MyOriginalCFrame = nil,
     OrigCamSubject = nil, OrigCamType = nil, Spectating = false,
@@ -47,6 +52,10 @@ local State = {
     FlingMode = nil,
     FlingEndTime = 0,
     ActiveFlingTarget = nil,
+    ActiveTab = "fling",
+    ClickFlingToolActive = false,
+    ClickFloatToolActive = false,
+    ClickFloatTopToolActive = false,
 }
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -138,10 +147,145 @@ Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
 local CS = Instance.new("UIStroke", CloseBtn)
 CS.Thickness = 1; CS.Color = Color3.fromRGB(255, 60, 60); CS.Transparency = 0.4
 
+-- ============ TABS ============
+local FlingTabBtn = Instance.new("TextButton")
+FlingTabBtn.Name = "FlingTabBtn"
+FlingTabBtn.Size = UDim2.new(0.5, -20, 0, 26)
+FlingTabBtn.Position = UDim2.new(0, 15, 0, 32)
+FlingTabBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+FlingTabBtn.BackgroundTransparency = 0.3
+FlingTabBtn.Text = "FLING"
+FlingTabBtn.TextSize = 12
+FlingTabBtn.Font = Enum.Font.GothamBold
+FlingTabBtn.TextColor3 = Color3.fromRGB(0, 230, 255)
+FlingTabBtn.AutoButtonColor = false
+FlingTabBtn.Parent = MainFrame
+Instance.new("UICorner", FlingTabBtn).CornerRadius = UDim.new(0, 6)
+local FlingTabStroke = Instance.new("UIStroke", FlingTabBtn)
+FlingTabStroke.Thickness = 1.5; FlingTabStroke.Color = Color3.fromRGB(0, 230, 255); FlingTabStroke.Transparency = 0.2
+
+local ClickTabBtn = Instance.new("TextButton")
+ClickTabBtn.Name = "ClickTabBtn"
+ClickTabBtn.Size = UDim2.new(0.5, -20, 0, 26)
+ClickTabBtn.Position = UDim2.new(0.5, 5, 0, 32)
+ClickTabBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ClickTabBtn.BackgroundTransparency = 0.5
+ClickTabBtn.Text = "CLICK FLING"
+ClickTabBtn.TextSize = 12
+ClickTabBtn.Font = Enum.Font.GothamBold
+ClickTabBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+ClickTabBtn.AutoButtonColor = false
+ClickTabBtn.Parent = MainFrame
+Instance.new("UICorner", ClickTabBtn).CornerRadius = UDim.new(0, 6)
+local ClickTabStroke = Instance.new("UIStroke", ClickTabBtn)
+ClickTabStroke.Thickness = 1.5; ClickTabStroke.Color = Color3.fromRGB(120, 120, 140); ClickTabStroke.Transparency = 0.4
+
+FlingTabBtn.MouseEnter:Connect(function() TweenService:Create(FlingTabBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.15}):Play() end)
+FlingTabBtn.MouseLeave:Connect(function() TweenService:Create(FlingTabBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play() end)
+ClickTabBtn.MouseEnter:Connect(function() TweenService:Create(ClickTabBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play() end)
+ClickTabBtn.MouseLeave:Connect(function() TweenService:Create(ClickTabBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play() end)
+
+-- ============ SEPARADOR ============
+local TabSeparator = Instance.new("Frame")
+TabSeparator.Name = "TabSeparator"
+TabSeparator.Size = UDim2.new(1, -20, 0, 2)
+TabSeparator.Position = UDim2.new(0, 10, 0, 60)
+TabSeparator.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+TabSeparator.BorderSizePixel = 0
+TabSeparator.ZIndex = 5
+TabSeparator.Parent = MainFrame
+Instance.new("UICorner", TabSeparator).CornerRadius = UDim.new(1, 0)
+
+local SepGradient = Instance.new("UIGradient")
+SepGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0,   Color3.fromRGB(0, 200, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 0, 255)),
+    ColorSequenceKeypoint.new(1,   Color3.fromRGB(0, 200, 255)),
+})
+SepGradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0,   1),
+    NumberSequenceKeypoint.new(0.15, 0.2),
+    NumberSequenceKeypoint.new(0.5, 0),
+    NumberSequenceKeypoint.new(0.85, 0.2),
+    NumberSequenceKeypoint.new(1,   1),
+})
+SepGradient.Parent = TabSeparator
+
+local SepGlow = Instance.new("Frame")
+SepGlow.Name = "SepGlow"
+SepGlow.Size = UDim2.new(1, -40, 0, 6)
+SepGlow.Position = UDim2.new(0, 20, 0, 60)
+SepGlow.BackgroundColor3 = Color3.fromRGB(120, 0, 255)
+SepGlow.BackgroundTransparency = 0.7
+SepGlow.BorderSizePixel = 0
+SepGlow.ZIndex = 4
+SepGlow.Parent = MainFrame
+Instance.new("UICorner", SepGlow).CornerRadius = UDim.new(1, 0)
+
+-- ============ CONTEÚDO FLING ============
+local FlingContent = Instance.new("Frame")
+FlingContent.Name = "FlingContent"
+FlingContent.Size = UDim2.new(1, 0, 1, -62)
+FlingContent.Position = UDim2.new(0, 0, 0, 62)
+FlingContent.BackgroundTransparency = 1
+FlingContent.Visible = true
+FlingContent.Parent = MainFrame
+
+-- ============ CONTEÚDO CLICK FLING ============
+local ClickContent = Instance.new("Frame")
+ClickContent.Name = "ClickContent"
+ClickContent.Size = UDim2.new(1, 0, 1, -62)
+ClickContent.Position = UDim2.new(0, 0, 0, 62)
+ClickContent.BackgroundTransparency = 1
+ClickContent.Visible = false
+ClickContent.Parent = MainFrame
+
+local ClickTitle = Instance.new("TextLabel")
+ClickTitle.Size = UDim2.new(1, -30, 0, 20)
+ClickTitle.Position = UDim2.new(0, 15, 0, 8)
+ClickTitle.BackgroundTransparency = 1
+ClickTitle.Text = "Toggle: mantém a Tool mesmo ao morrer:"
+ClickTitle.TextColor3 = Color3.fromRGB(180, 180, 200)
+ClickTitle.TextSize = 11
+ClickTitle.Font = Enum.Font.Gotham
+ClickTitle.TextXAlignment = Enum.TextXAlignment.Left
+ClickTitle.Parent = ClickContent
+
+local function switchTab(tab)
+    State.ActiveTab = tab
+    if tab == "fling" then
+        FlingContent.Visible = true
+        ClickContent.Visible = false
+        FlingTabBtn.TextColor3 = Color3.fromRGB(0, 230, 255)
+        FlingTabStroke.Color = Color3.fromRGB(0, 230, 255)
+        FlingTabStroke.Transparency = 0.2
+        FlingTabBtn.BackgroundTransparency = 0.3
+        ClickTabBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+        ClickTabStroke.Color = Color3.fromRGB(120, 120, 140)
+        ClickTabStroke.Transparency = 0.4
+        ClickTabBtn.BackgroundTransparency = 0.5
+    else
+        FlingContent.Visible = false
+        ClickContent.Visible = true
+        ClickTabBtn.TextColor3 = Color3.fromRGB(255, 100, 200)
+        ClickTabStroke.Color = Color3.fromRGB(255, 100, 200)
+        ClickTabStroke.Transparency = 0.2
+        ClickTabBtn.BackgroundTransparency = 0.3
+        FlingTabBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+        FlingTabStroke.Color = Color3.fromRGB(120, 120, 140)
+        FlingTabStroke.Transparency = 0.4
+        FlingTabBtn.BackgroundTransparency = 0.5
+    end
+end
+
+FlingTabBtn.MouseButton1Click:Connect(function() switchTab("fling") end)
+ClickTabBtn.MouseButton1Click:Connect(function() switchTab("click") end)
+
+-- ============ BOTÕES DO FLING ============
 local V1Btn = Instance.new("TextButton")
 V1Btn.Name = "V1Btn"
 V1Btn.Size = UDim2.new(0.5, -20, 0, 24)
-V1Btn.Position = UDim2.new(0, 15, 0, 34)
+V1Btn.Position = UDim2.new(0, 15, 0, 5)
 V1Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 V1Btn.BackgroundTransparency = 0.5
 V1Btn.Text = "V1 (tempo+spike)"
@@ -149,7 +293,7 @@ V1Btn.TextSize = 11
 V1Btn.Font = Enum.Font.GothamBold
 V1Btn.TextColor3 = Color3.fromRGB(150, 255, 150)
 V1Btn.AutoButtonColor = false
-V1Btn.Parent = MainFrame
+V1Btn.Parent = FlingContent
 Instance.new("UICorner", V1Btn).CornerRadius = UDim.new(0, 6)
 local V1Stroke = Instance.new("UIStroke", V1Btn)
 V1Stroke.Thickness = 1.5; V1Stroke.Color = Color3.fromRGB(0, 255, 100); V1Stroke.Transparency = 0.3
@@ -157,7 +301,7 @@ V1Stroke.Thickness = 1.5; V1Stroke.Color = Color3.fromRGB(0, 255, 100); V1Stroke
 local V2Btn = Instance.new("TextButton")
 V2Btn.Name = "V2Btn"
 V2Btn.Size = UDim2.new(0.5, -20, 0, 24)
-V2Btn.Position = UDim2.new(0.5, 5, 0, 34)
+V2Btn.Position = UDim2.new(0.5, 5, 0, 5)
 V2Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 V2Btn.BackgroundTransparency = 0.5
 V2Btn.Text = "V2 (TP rápido)"
@@ -165,7 +309,7 @@ V2Btn.TextSize = 11
 V2Btn.Font = Enum.Font.GothamBold
 V2Btn.TextColor3 = Color3.fromRGB(180, 180, 200)
 V2Btn.AutoButtonColor = false
-V2Btn.Parent = MainFrame
+V2Btn.Parent = FlingContent
 Instance.new("UICorner", V2Btn).CornerRadius = UDim.new(0, 6)
 local V2Stroke = Instance.new("UIStroke", V2Btn)
 V2Stroke.Thickness = 1.5; V2Stroke.Color = Color3.fromRGB(120, 120, 140); V2Stroke.Transparency = 0.3
@@ -178,7 +322,7 @@ V2Btn.MouseLeave:Connect(function() TweenService:Create(V2Btn, TweenInfo.new(0.1
 local AllBtn = Instance.new("TextButton")
 AllBtn.Name = "AllBtn"
 AllBtn.Size = UDim2.new(1, -30, 0, 28)
-AllBtn.Position = UDim2.new(0, 15, 0, 64)
+AllBtn.Position = UDim2.new(0, 15, 0, 35)
 AllBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 AllBtn.BackgroundTransparency = 0.5
 AllBtn.Text = "ALL (OFF)"
@@ -186,7 +330,7 @@ AllBtn.TextSize = 13
 AllBtn.Font = Enum.Font.GothamBold
 AllBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
 AllBtn.AutoButtonColor = false
-AllBtn.Parent = MainFrame
+AllBtn.Parent = FlingContent
 Instance.new("UICorner", AllBtn).CornerRadius = UDim.new(0, 8)
 local AllStroke = Instance.new("UIStroke", AllBtn)
 AllStroke.Thickness = 1.5; AllStroke.Color = Color3.fromRGB(120, 120, 140); AllStroke.Transparency = 0.3
@@ -202,18 +346,18 @@ AllBtn.MouseLeave:Connect(function() TweenService:Create(AllBtn, TweenInfo.new(0
 
 local SpeedLabel = Instance.new("TextLabel")
 SpeedLabel.Size = UDim2.new(0, 100, 0, 16)
-SpeedLabel.Position = UDim2.new(0, 15, 0, 96)
+SpeedLabel.Position = UDim2.new(0, 15, 0, 67)
 SpeedLabel.BackgroundTransparency = 1
 SpeedLabel.Text = "Velocidade V2 (s):"
 SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
 SpeedLabel.TextSize = 10
 SpeedLabel.Font = Enum.Font.Gotham
 SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
-SpeedLabel.Parent = MainFrame
+SpeedLabel.Parent = FlingContent
 
 local SpeedBox = Instance.new("TextBox")
 SpeedBox.Size = UDim2.new(1, -30, 0, 22)
-SpeedBox.Position = UDim2.new(0, 15, 0, 114)
+SpeedBox.Position = UDim2.new(0, 15, 0, 85)
 SpeedBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 SpeedBox.BackgroundTransparency = 0.45
 SpeedBox.PlaceholderText = "0.02"
@@ -222,14 +366,14 @@ SpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 SpeedBox.TextSize = 11
 SpeedBox.Font = Enum.Font.Gotham
 SpeedBox.ClearTextOnFocus = false
-SpeedBox.Parent = MainFrame
+SpeedBox.Parent = FlingContent
 Instance.new("UICorner", SpeedBox).CornerRadius = UDim.new(0, 6)
 local SpeedStroke = Instance.new("UIStroke", SpeedBox)
 SpeedStroke.Thickness = 1; SpeedStroke.Color = Color3.fromRGB(255, 100, 200); SpeedStroke.Transparency = 0.5
 
 local TargetBox = Instance.new("TextBox")
 TargetBox.Size = UDim2.new(1, -30, 0, 32)
-TargetBox.Position = UDim2.new(0, 15, 0, 144)
+TargetBox.Position = UDim2.new(0, 15, 0, 115)
 TargetBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TargetBox.BackgroundTransparency = 0.45
 TargetBox.PlaceholderText = "Nome do jogador (qualquer letra)..."
@@ -239,23 +383,23 @@ TargetBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 TargetBox.TextSize = 13
 TargetBox.Font = Enum.Font.Gotham
 TargetBox.ClearTextOnFocus = false
-TargetBox.Parent = MainFrame
+TargetBox.Parent = FlingContent
 Instance.new("UICorner", TargetBox).CornerRadius = UDim.new(0, 8)
 local TBS = Instance.new("UIStroke", TargetBox)
 TBS.Thickness = 1; TBS.Color = Color3.fromRGB(0, 200, 255); TBS.Transparency = 0.5
 
 local TargetStatus = Instance.new("TextLabel")
 TargetStatus.Size = UDim2.new(1, -30, 0, 14)
-TargetStatus.Position = UDim2.new(0, 15, 0, 178)
+TargetStatus.Position = UDim2.new(0, 15, 0, 149)
 TargetStatus.BackgroundTransparency = 1
 TargetStatus.Text = "Alvo: —"
 TargetStatus.TextColor3 = Color3.fromRGB(120, 220, 255)
 TargetStatus.TextSize = 11
 TargetStatus.Font = Enum.Font.Gotham
 TargetStatus.TextXAlignment = Enum.TextXAlignment.Left
-TargetStatus.Parent = MainFrame
+TargetStatus.Parent = FlingContent
 
-local function makeButton(name, text, posX, sizeX, colorA, colorB)
+local function makeFlingButton(name, text, posX, sizeX, colorA, colorB)
     local btn = Instance.new("TextButton")
     btn.Name = name
     btn.Size = UDim2.new(sizeX, -20, 0, 34)
@@ -267,7 +411,7 @@ local function makeButton(name, text, posX, sizeX, colorA, colorB)
     btn.Font = Enum.Font.GothamBold
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.AutoButtonColor = false
-    btn.Parent = MainFrame
+    btn.Parent = FlingContent
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
     local str = Instance.new("UIStroke", btn)
     str.Thickness = 1.5; str.Color = colorA; str.Transparency = 0.3
@@ -283,29 +427,117 @@ local function makeButton(name, text, posX, sizeX, colorA, colorB)
     return btn, str
 end
 
-local Fling2sBtn, F4Stroke = makeButton("Fling2sBtn", "FLING 1.3s", 0, 0.5, Color3.fromRGB(255, 200, 0), Color3.fromRGB(120, 80, 0))
-Fling2sBtn.Position = UDim2.new(0, 15, 0, 196)
-local FlingLoopBtn, FLStroke = makeButton("FlingLoopBtn", "FLING LOOP", 0.5, 0.5, Color3.fromRGB(0, 230, 255), Color3.fromRGB(0, 60, 120))
-FlingLoopBtn.Position = UDim2.new(0.5, 5, 0, 196)
-local FloatBtn, FBStroke2 = makeButton("FloatBtn", "FLOAT PLAYER", 0, 1.0, Color3.fromRGB(200, 0, 200), Color3.fromRGB(70, 0, 80))
+local Fling2sBtn, F4Stroke = makeFlingButton("Fling2sBtn", "FLING 1.3s", 0, 0.5, Color3.fromRGB(255, 200, 0), Color3.fromRGB(120, 80, 0))
+Fling2sBtn.Position = UDim2.new(0, 15, 0, 167)
+local FlingLoopBtn, FLStroke = makeFlingButton("FlingLoopBtn", "FLING LOOP", 0.5, 0.5, Color3.fromRGB(0, 230, 255), Color3.fromRGB(0, 60, 120))
+FlingLoopBtn.Position = UDim2.new(0.5, 5, 0, 167)
+local FloatBtn, FBStroke2 = makeFlingButton("FloatBtn", "FLOAT PLAYER", 0, 1.0, Color3.fromRGB(200, 0, 200), Color3.fromRGB(70, 0, 80))
 FloatBtn.Size = UDim2.new(1, -30, 0, 34)
-FloatBtn.Position = UDim2.new(0, 15, 0, 234)
-local FloatTopBtn, FTStroke = makeButton("FloatTopBtn", "FLOAT TOP", 0, 1.0, Color3.fromRGB(255, 100, 0), Color3.fromRGB(90, 30, 0))
+FloatBtn.Position = UDim2.new(0, 15, 0, 205)
+local FloatTopBtn, FTStroke = makeFlingButton("FloatTopBtn", "FLOAT TOP", 0, 1.0, Color3.fromRGB(255, 100, 0), Color3.fromRGB(90, 30, 0))
 FloatTopBtn.Size = UDim2.new(1, -30, 0, 34)
-FloatTopBtn.Position = UDim2.new(0, 15, 0, 272)
-
-local FrozenBtn, FZStroke = makeButton("FrozenBtn", "PRISON", 0, 1.0, Color3.fromRGB(100, 200, 255), Color3.fromRGB(20, 60, 140))
-FrozenBtn.Size = UDim2.new(1, -30, 0, 34)
-FrozenBtn.Position = UDim2.new(0, 15, 0, 310)
-
-local HitboxBtn, HBStroke = makeButton("HitboxBtn", "HITBOX TOGGLE (OFF)", 0, 1.0, Color3.fromRGB(0, 255, 200), Color3.fromRGB(0, 80, 80))
+FloatTopBtn.Position = UDim2.new(0, 15, 0, 243)
+local HitboxBtn, HBStroke = makeFlingButton("HitboxBtn", "HITBOX TOGGLE (OFF)", 0, 1.0, Color3.fromRGB(0, 255, 200), Color3.fromRGB(0, 80, 80))
 HitboxBtn.Size = UDim2.new(1, -30, 0, 34)
-HitboxBtn.Position = UDim2.new(0, 15, 0, 348)
+HitboxBtn.Position = UDim2.new(0, 15, 0, 281)
 
--- 🆕 CLICK FLING
-local ClickFlingBtn, CFStroke = makeButton("ClickFlingBtn", "CLICK FLING (OFF)", 0, 1.0, Color3.fromRGB(255, 60, 200), Color3.fromRGB(120, 0, 90))
-ClickFlingBtn.Size = UDim2.new(1, -30, 0, 34)
-ClickFlingBtn.Position = UDim2.new(0, 15, 0, 386)
+-- ============ BOTÕES DO CLICK FLING ============
+local function makeClickButton(name, text, yPos, colorA, colorB)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = UDim2.new(1, -30, 0, 40)
+    btn.Position = UDim2.new(0, 15, 0, yPos)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    btn.BackgroundTransparency = 0.5
+    btn.Text = text
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamBold
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.AutoButtonColor = false
+    btn.Parent = ClickContent
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    local str = Instance.new("UIStroke", btn)
+    str.Thickness = 1.5; str.Color = colorA; str.Transparency = 0.3
+    local grad = Instance.new("UIGradient", btn)
+    grad.Color = ColorSequence.new(colorA, colorB)
+    grad.Rotation = 90
+    grad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.5),
+        NumberSequenceKeypoint.new(1, 0.5),
+    })
+    btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.25}):Play() end)
+    btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play() end)
+    return btn, str, grad
+end
+
+local GetClickFlingBtn, GCFStroke, GCFGrad = makeClickButton("GetClickFlingBtn", "CLICK FLING (OFF)", 36, Color3.fromRGB(255, 60, 200), Color3.fromRGB(120, 0, 90))
+local GetClickFloatBtn, GCF2Stroke, GCF2Grad = makeClickButton("GetClickFloatBtn", "CLICK FLOAT (OFF)", 84, Color3.fromRGB(200, 0, 200), Color3.fromRGB(70, 0, 80))
+local GetClickFloatTopBtn, GCF3Stroke, GCF3Grad = makeClickButton("GetClickFloatTopBtn", "CLICK FLOAT TOP (OFF)", 132, Color3.fromRGB(255, 100, 0), Color3.fromRGB(90, 30, 0))
+
+local ClickInfo = Instance.new("TextLabel")
+ClickInfo.Size = UDim2.new(1, -30, 0, 60)
+ClickInfo.Position = UDim2.new(0, 15, 0, 182)
+ClickInfo.BackgroundTransparency = 1
+ClickInfo.Text = "• Toggle ON: recebe a Tool e mantém\n  mesmo após morrer/respawnar\n• Toggle OFF: remove e para o fling\n• Clique no player pra flingar/parar"
+ClickInfo.TextColor3 = Color3.fromRGB(140, 150, 180)
+ClickInfo.TextSize = 10
+ClickInfo.Font = Enum.Font.Gotham
+ClickInfo.TextXAlignment = Enum.TextXAlignment.Left
+ClickInfo.TextYAlignment = Enum.TextYAlignment.Top
+ClickInfo.Parent = ClickContent
+
+-- ============ CFG ============
+CFG = {
+    FrontOffset      = 10,
+    FlingVelocity    = 10000,
+    Fling2sDuration  = 1.3,
+    MoveVelocityThreshold = 16,
+    StopVelocityThreshold = 3,
+
+    AllSwapTime      = 3.0,
+    AllFlyThreshold  = 20,
+
+    SpikeMaxDuration      = 4.0,
+    SpikeResumeMinHeight  = 50,
+    SpikeResumeMaxFallSpeed = -50,
+
+    BigHitboxSize    = 28,
+    BigHitboxAlpha   = 0.35,
+
+    FloatOffset        = 0.5,
+    FloatVelocity      = 250,
+    FloatStepUp        = 1.0,
+    FloatFrontOffset   = 10,
+    FloatFallOffset    = 9,
+    FloatFallThreshold = -10,
+
+    FloatRisingOffset    = 13,
+    FloatRisingThreshold = 5,
+
+    FloatTopOffset      = 1.0,
+    FloatTopVelocity    = -250,
+    FloatTopStepDown    = 1.0,
+    FloatTopFrontOffset = 14.0,
+
+    DirectionChangeThreshold = 60,
+
+    VoidY            = -80,
+    SpikeThreshold   = 320,
+
+    Noclip           = true,
+
+    AirVelocityThreshold = 300,
+    AirHeightThreshold   = 60,
+    AirMinFrames         = 8,
+
+    SafeLandOffset       = 5,
+    SafeFlyDuration      = 0.4,
+
+    ToolEnsureInterval   = 0.5,
+
+    -- Float Top: para automático se a velocidade do alvo passar disso
+    FloatTopStopVelocity = 30,
+}
 
 -- ============ UTILS ============
 local function findPlayerByQuery(q)
@@ -376,6 +608,20 @@ local function getTargetVelocity(p)
     local r = getRoot(p)
     if not r then return 0 end
     return r.AssemblyLinearVelocity.Magnitude
+end
+
+local function isTargetInAir(target, startY)
+    if not target then return false end
+    local root = getRoot(target)
+    if not root then return false end
+
+    if root.AssemblyLinearVelocity.Y > CFG.AirVelocityThreshold then
+        return true
+    end
+    if startY and (root.Position.Y - startY) > CFG.AirHeightThreshold then
+        return true
+    end
+    return false
 end
 
 local function checkSpike(p)
@@ -518,7 +764,7 @@ local function applyNoclip()
     local char = LocalPlayer.Character
     if not char then return end
     for _, d in ipairs(char:GetDescendants()) do
-        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" then
             if d:GetAttribute("__FlingOrigCanCollide") == nil then
                 d:SetAttribute("__FlingOrigCanCollide", d.CanCollide)
             end
@@ -534,7 +780,7 @@ local function removeNoclip()
     local char = LocalPlayer.Character
     if char then
         for _, d in ipairs(char:GetDescendants()) do
-            if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+            if d:IsA("BasePart") and d.Name ~= "__BigHitbox" then
                 local orig = d:GetAttribute("__FlingOrigCanCollide")
                 if orig ~= nil then
                     d.CanCollide = orig
@@ -609,7 +855,7 @@ end
 
 local function shouldHitboxBeActive()
     if State.AllMode then return true end
-    if State.HitboxToggle and (State.WalkFling or State.FrozenOrbit or State.ClickFlingActive) then return true end
+    if State.HitboxToggle and (State.WalkFling or State.ClickFlingActive) then return true end
     return false
 end
 
@@ -648,6 +894,74 @@ local function restoreMyCamera()
     end
 end
 
+-- ════════════════════════════════════════════════════════════
+-- SAFE LAND (anti-dano de queda) — fly do infinity yield
+-- ════════════════════════════════════════════════════════════
+local _lastSafeLandTime = 0
+local function safeLandAndFly()
+    if tick() - _lastSafeLandTime < 1.0 then return end
+    _lastSafeLandTime = tick()
+
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not hrp or not hum or hum.Health <= 0 then return end
+
+    local refPos = State.MyOriginalCFrame and State.MyOriginalCFrame.Position or hrp.Position
+
+    local rayParams = RaycastParams.new()
+    rayParams.FilterDescendantsInstances = {char}
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    local origin = Vector3.new(refPos.X, refPos.Y + 50, refPos.Z)
+    local result = workspace:Raycast(origin, Vector3.new(0, -1000, 0), rayParams)
+
+    local groundY
+    if result then
+        groundY = result.Position.Y
+    else
+        groundY = refPos.Y
+    end
+
+    local finalCF = CFrame.new(refPos.X, groundY + CFG.SafeLandOffset, refPos.Z)
+
+    pcall(function() hrp.CFrame = finalCF end)
+    pcall(function()
+        hrp.AssemblyLinearVelocity  = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+        hrp.Velocity    = Vector3.zero
+        hrp.RotVelocity = Vector3.zero
+    end)
+
+    local bv = Instance.new("BodyVelocity")
+    bv.Name = "__SafeFlyBV"
+    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bv.Velocity = Vector3.zero
+    bv.Parent = hrp
+
+    local bg = Instance.new("BodyGyro")
+    bg.Name = "__SafeFlyBG"
+    bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    bg.P = 3000
+    bg.D = 500
+    bg.CFrame = finalCF
+    bg.Parent = hrp
+
+    pcall(function() hum.PlatformStand = true end)
+
+    task.wait(CFG.SafeFlyDuration)
+
+    if bv and bv.Parent then bv:Destroy() end
+    if bg and bg.Parent then bg:Destroy() end
+
+    pcall(function()
+        hrp.AssemblyLinearVelocity  = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+    end)
+    pcall(function() hum.PlatformStand = false end)
+
+    State.MyOriginalCFrame = nil
+end
+
 local function cleanupAndReturn()
     killFlingVelocity()
     removeNoclip()
@@ -662,11 +976,10 @@ local function cleanupAndReturn()
             hrp.Velocity    = Vector3.zero
             hrp.RotVelocity = Vector3.zero
         end)
-        if State.MyOriginalCFrame then
-            pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
-        end
     end
-    State.MyOriginalCFrame = nil
+
+    safeLandAndFly()
+
     State.SpikePaused = false
     State.SpikeStartTime = 0
     restoreMyCamera()
@@ -927,7 +1240,7 @@ local function startWalkFling(mode)
                     end
 
                     for _, d in ipairs(char:GetDescendants()) do
-                        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+                        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" then
                             local isTorso = (d.Name == "UpperTorso" or d.Name == "Torso")
                             if d.CanCollide ~= isTorso then
                                 d.CanCollide = isTorso
@@ -1102,8 +1415,6 @@ FlingLoopBtn.MouseButton1Click:Connect(function()
     if State.WalkFling then stopWalkFling(State.AllMode) end
     if State.FloatPlayer then stopFloatPlayer() end
     if State.FloatTop then stopFloatTop() end
-    if State.FrozenOrbit then stopFrozenOrbit() end
-    if State.ClickFling then stopClickFling() end
 
     if not State.AllMode and not State.Target then
         setStatus("Selecione um alvo ou ative ALL primeiro!", Color3.fromRGB(255, 120, 120))
@@ -1120,8 +1431,6 @@ Fling2sBtn.MouseButton1Click:Connect(function()
     if State.WalkFling then stopWalkFling(State.AllMode) end
     if State.FloatPlayer then stopFloatPlayer() end
     if State.FloatTop then stopFloatTop() end
-    if State.FrozenOrbit then stopFrozenOrbit() end
-    if State.ClickFling then stopClickFling() end
 
     if not State.AllMode and not State.Target then
         setStatus("Selecione um alvo ou ative ALL primeiro!", Color3.fromRGB(255, 120, 120))
@@ -1135,6 +1444,8 @@ local function stopFloatPlayer()
     State.FloatPlayer = false
     State.FloatPlayerMoving = false
     State.FloatPlayerDir = nil
+    State.FloatPlayerTargetStartY = nil
+    State.FloatPlayerAirFrames = 0
     State.SpikePaused = false
     State.SpikeStartTime = 0
     State.ActiveFlingTarget = nil
@@ -1152,6 +1463,8 @@ local function startFloatPlayer()
     State.FloatPlayer = true
     State.FloatPlayerMoving = false
     State.FloatPlayerDir = nil
+    State.FloatPlayerTargetStartY = nil
+    State.FloatPlayerAirFrames = 0
     State.SpikePaused = false
     State.SpikeStartTime = 0
     saveMyPosition()
@@ -1195,7 +1508,7 @@ local function startFloatPlayer()
                     end
 
                     for _, d in ipairs(char:GetDescendants()) do
-                        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+                        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" then
                             local isTorso = (d.Name == "UpperTorso" or d.Name == "Torso")
                             if d.CanCollide ~= isTorso then
                                 d.CanCollide = isTorso
@@ -1214,6 +1527,8 @@ local function startFloatPlayer()
                                 State.AllTargetStartY = nil
                                 State.SpikePaused = false
                                 State.SpikeStartTime = 0
+                                State.FloatPlayerTargetStartY = nil
+                                State.FloatPlayerAirFrames = 0
                                 RunService.Heartbeat:Wait()
                                 continue
                             else
@@ -1237,6 +1552,8 @@ local function startFloatPlayer()
                         end)
                         State.SpikePaused = false
                         State.SpikeStartTime = 0
+                        State.FloatPlayerTargetStartY = nil
+                        State.FloatPlayerAirFrames = 0
                         if State.AllMode then
                             setStatus("Aguardando respawn... (" .. #getAliveOthers() .. " vivos)", Color3.fromRGB(255, 180, 100))
                         else
@@ -1284,6 +1601,21 @@ local function startFloatPlayer()
                                     setStatus("Spike acabou — float retomando!", Color3.fromRGB(100, 255, 150))
                                 end
 
+                                if not State.FloatPlayerTargetStartY then
+                                    State.FloatPlayerTargetStartY = tRoot.Position.Y
+                                end
+
+                                if isTargetInAir(target, State.FloatPlayerTargetStartY) then
+                                    State.FloatPlayerAirFrames = State.FloatPlayerAirFrames + 1
+                                else
+                                    State.FloatPlayerAirFrames = 0
+                                end
+                                if State.FloatPlayerAirFrames >= CFG.AirMinFrames then
+                                    setStatus("Alvo no ar — float player parado", Color3.fromRGB(255, 180, 100))
+                                    State.FloatPlayer = false
+                                    break
+                                end
+
                                 stepUp = not stepUp
                                 local yOffset = stepUp and CFG.FloatStepUp or 0
 
@@ -1311,15 +1643,11 @@ local function startFloatPlayer()
 
                                 local basePos
                                 if isRising and isMoving and hasMoveDir then
-                                    basePos = refPos
-                                        + (moveDir * CFG.FloatFrontOffset)
-                                        + Vector3.new(0, CFG.FloatRisingOffset, 0)
+                                    basePos = refPos + (moveDir * CFG.FloatFrontOffset) + Vector3.new(0, CFG.FloatRisingOffset, 0)
                                 elseif isRising then
                                     basePos = refPos + Vector3.new(0, CFG.FloatRisingOffset, 0)
                                 elseif isFalling and isMoving and hasMoveDir then
-                                    basePos = refPos
-                                        + (moveDir * CFG.FloatFrontOffset)
-                                        - Vector3.new(0, CFG.FloatFallOffset, 0)
+                                    basePos = refPos + (moveDir * CFG.FloatFrontOffset) - Vector3.new(0, CFG.FloatFallOffset, 0)
                                 elseif isFalling then
                                     basePos = refPos - Vector3.new(0, CFG.FloatFallOffset, 0)
                                 elseif isMoving and hasMoveDir then
@@ -1378,8 +1706,6 @@ FloatBtn.MouseButton1Click:Connect(function()
     else
         if State.WalkFling then stopWalkFling(State.AllMode) end
         if State.FloatTop then stopFloatTop() end
-        if State.FrozenOrbit then stopFrozenOrbit() end
-        if State.ClickFling then stopClickFling() end
         startFloatPlayer()
     end
 end)
@@ -1389,6 +1715,8 @@ local function stopFloatTop()
     State.FloatTop = false
     State.FloatTopMoving = false
     State.FloatTopDir = nil
+    State.FloatTopTargetStartY = nil
+    State.FloatTopAirFrames = 0
     State.SpikePaused = false
     State.SpikeStartTime = 0
     State.ActiveFlingTarget = nil
@@ -1406,6 +1734,8 @@ local function startFloatTop()
     State.FloatTop = true
     State.FloatTopMoving = false
     State.FloatTopDir = nil
+    State.FloatTopTargetStartY = nil
+    State.FloatTopAirFrames = 0
     State.SpikePaused = false
     State.SpikeStartTime = 0
     saveMyPosition()
@@ -1449,7 +1779,7 @@ local function startFloatTop()
                     end
 
                     for _, d in ipairs(char:GetDescendants()) do
-                        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
+                        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" then
                             local isTorso = (d.Name == "UpperTorso" or d.Name == "Torso")
                             if d.CanCollide ~= isTorso then
                                 d.CanCollide = isTorso
@@ -1468,6 +1798,8 @@ local function startFloatTop()
                                 State.AllTargetStartY = nil
                                 State.SpikePaused = false
                                 State.SpikeStartTime = 0
+                                State.FloatTopTargetStartY = nil
+                                State.FloatTopAirFrames = 0
                                 RunService.Heartbeat:Wait()
                                 continue
                             else
@@ -1491,6 +1823,8 @@ local function startFloatTop()
                         end)
                         State.SpikePaused = false
                         State.SpikeStartTime = 0
+                        State.FloatTopTargetStartY = nil
+                        State.FloatTopAirFrames = 0
                         if State.AllMode then
                             setStatus("Aguardando respawn... (" .. #getAliveOthers() .. " vivos)", Color3.fromRGB(255, 180, 100))
                         else
@@ -1538,6 +1872,29 @@ local function startFloatTop()
                                     setStatus("Spike acabou — top retomando!", Color3.fromRGB(100, 255, 150))
                                 end
 
+                                -- Para automático se a velocidade do alvo passar do limite
+                                local curSpeed = tRoot.AssemblyLinearVelocity.Magnitude
+                                if curSpeed > CFG.FloatTopStopVelocity then
+                                    setStatus("Alvo em movimento (" .. math.floor(curSpeed) .. " > " .. CFG.FloatTopStopVelocity .. ") — float top parado", Color3.fromRGB(255, 180, 100))
+                                    State.FloatTop = false
+                                    break
+                                end
+
+                                if not State.FloatTopTargetStartY then
+                                    State.FloatTopTargetStartY = tRoot.Position.Y
+                                end
+
+                                if isTargetInAir(target, State.FloatTopTargetStartY) then
+                                    State.FloatTopAirFrames = State.FloatTopAirFrames + 1
+                                else
+                                    State.FloatTopAirFrames = 0
+                                end
+                                if State.FloatTopAirFrames >= CFG.AirMinFrames then
+                                    setStatus("Alvo no ar — float top parado", Color3.fromRGB(255, 180, 100))
+                                    State.FloatTop = false
+                                    break
+                                end
+
                                 stepDown = not stepDown
                                 local yOffset = stepDown and -CFG.FloatTopStepDown or 0
 
@@ -1564,15 +1921,11 @@ local function startFloatTop()
 
                                 local basePos
                                 if isRising and isMoving and hasMoveDir then
-                                    basePos = refPos
-                                        + (moveDir * CFG.FloatTopFrontOffset)
-                                        + Vector3.new(0, CFG.FloatRisingOffset, 0)
+                                    basePos = refPos + (moveDir * CFG.FloatTopFrontOffset) + Vector3.new(0, CFG.FloatRisingOffset, 0)
                                 elseif isRising then
                                     basePos = refPos + Vector3.new(0, CFG.FloatRisingOffset, 0)
                                 elseif isMoving and hasMoveDir then
-                                    basePos = refPos
-                                        + (moveDir * CFG.FloatTopFrontOffset)
-                                        + Vector3.new(0, CFG.FloatTopOffset, 0)
+                                    basePos = refPos + (moveDir * CFG.FloatTopFrontOffset) + Vector3.new(0, CFG.FloatTopOffset, 0)
                                 else
                                     basePos = refPos + Vector3.new(0, CFG.FloatTopOffset, 0)
                                 end
@@ -1623,290 +1976,36 @@ FloatTopBtn.MouseButton1Click:Connect(function()
     else
         if State.WalkFling then stopWalkFling(State.AllMode) end
         if State.FloatPlayer then stopFloatPlayer() end
-        if State.FrozenOrbit then stopFrozenOrbit() end
-        if State.ClickFling then stopClickFling() end
         startFloatTop()
     end
 end)
 
--- ============ PRISON ============
-local function stopFrozenOrbit()
-    State.FrozenOrbit = false
-    State.OrbitAngle = 0
-    State.OrbitStep = false
-    State.PrisonMoving = false
-    State.PrisonDir = nil
-    State.SpikePaused = false
-    State.SpikeStartTime = 0
-    State.ActiveFlingTarget = nil
-    FrozenBtn.Text = "PRISON"
-    FZStroke.Color = Color3.fromRGB(100, 200, 255)
+-- ════════════════════════════════════════════════════════════
+-- ═══════════════════ CLICK FLING TOOLS (TOGGLE) ═════════════
+-- ════════════════════════════════════════════════════════════
+local ALL_CLICK_TOOLS = { "ClickFlingTool", "ClickFloatTool", "ClickFloatTopTool" }
 
-    if State.PrisonParts then
-        for _, p in ipairs(State.PrisonParts) do
-            pcall(function() p:Destroy() end)
-        end
-        State.PrisonParts = nil
-    end
-
-    syncHitbox()
-    stopSpectate()
-    cleanupAndReturn()
-end
-
-local function startFrozenOrbit()
-    if not State.Target and not State.AllMode then
-        setStatus("Selecione um alvo ou ative ALL primeiro!", Color3.fromRGB(255, 120, 120))
-        return
-    end
-    State.FrozenOrbit = true
-    State.OrbitAngle = 0
-    State.OrbitStep = false
-    State.PrisonMoving = false
-    State.PrisonDir = nil
-    State.SpikePaused = false
-    State.SpikeStartTime = 0
-    saveMyPosition()
-    FrozenBtn.Text = "PARAR PRISON"
-    FZStroke.Color = Color3.fromRGB(255, 60, 60)
-
-    local firstTarget = pickTarget("PRISON")
-    if firstTarget then spectate(firstTarget) end
-
-    task.spawn(function()
-        local prisonParts = {}
-        local offsetAngles = {}
-
-        local function clearPrison()
-            for _, p in ipairs(prisonParts) do
-                pcall(function() p:Destroy() end)
-            end
-            prisonParts = {}
-            offsetAngles = {}
-        end
-
-        local function createPrison()
-            clearPrison()
-
-            local count = CFG.PrisonPartCount
-            local psize = CFG.PrisonPartSize
-
-            for i = 1, count do
-                local angle = ((i - 1) / count) * math.pi * 2
-                table.insert(offsetAngles, angle)
-
-                local box = Instance.new("Part")
-                box.Name = "__PrisonHitbox_" .. i
-                box.Shape = Enum.PartType.Ball
-                box.Size = Vector3.new(psize, psize, psize)
-                box.CanCollide = true
-                box.CanTouch = true
-                box.CanQuery = true
-                box.Anchored = false
-                box.Massless = false
-                box.CustomPhysicalProperties = PhysicalProperties.new(50, 0.3, 0.5, 1, 1)
-                box.Transparency = CFG.PrisonAlpha
-                box.Color = Color3.fromRGB(100, 200, 255)
-                box.Material = Enum.Material.ForceField
-                box.CFrame = CFrame.new(0, -1000, 0)
-                box.Parent = workspace
-
-                pcall(function() box:SetNetworkOwner(LocalPlayer) end)
-
-                table.insert(prisonParts, box)
-            end
-
-            State.PrisonParts = prisonParts
-        end
-
-        createPrison()
-
-        while State.FrozenOrbit do
-            local char = LocalPlayer.Character
-            local myHrp = char and char:FindFirstChild("HumanoidRootPart")
-            local myHum = char and char:FindFirstChildOfClass("Humanoid")
-
-            if myHrp then
-                pcall(function()
-                    myHrp.AssemblyLinearVelocity = Vector3.zero
-                    myHrp.AssemblyAngularVelocity = Vector3.zero
-                    myHrp.Velocity = Vector3.zero
-                    myHrp.RotVelocity = Vector3.zero
-                end)
-                if myHrp.Position.Y < CFG.VoidY + 15 and State.MyOriginalCFrame then
-                    pcall(function() myHrp.CFrame = State.MyOriginalCFrame end)
-                end
-            end
-
-            local target = pickTarget("PRISON")
-
-            if target and isPlayerGone(target) then
-                if State.AllMode then
-                    local alive = getAliveOthers()
-                    if #alive > 0 then
-                        State.AllIndex = (State.AllIndex % #alive) + 1
-                        State.AllTargetStart = tick()
-                        State.AllTargetStartY = nil
-                        State.SpikePaused = false
-                        State.SpikeStartTime = 0
-                        RunService.Heartbeat:Wait()
-                        continue
-                    else
-                        setStatus("Todos saíram — parando", Color3.fromRGB(255, 120, 120))
-                        State.FrozenOrbit = false
-                        break
-                    end
-                else
-                    setStatus("Alvo saiu do jogo — parando", Color3.fromRGB(255, 120, 120))
-                    State.Target = nil
-                    State.FrozenOrbit = false
-                    break
-                end
-            end
-
-            if not target or isDead(target) then
-                setStatus(State.AllMode and ("Aguardando respawn... (" .. #getAliveOthers() .. " vivos)") or "Alvo morreu — aguardando respawn...", Color3.fromRGB(255, 180, 100))
-
-                for _, box in ipairs(prisonParts) do
-                    if box and box.Parent then
-                        box.CFrame = CFrame.new(0, -1000, 0)
-                    end
-                end
-
-                RunService.Heartbeat:Wait()
-                continue
-            end
-
-            if wentToVoid(target) then
-                if State.AllMode then
-                    local alive = getAliveOthers()
-                    if #alive > 0 then
-                        State.AllIndex = (State.AllIndex % #alive) + 1
-                        State.AllTargetStart = tick()
-                        State.AllTargetStartY = nil
-                        State.SpikePaused = false
-                        State.SpikeStartTime = 0
-                        RunService.Heartbeat:Wait()
-                        continue
-                    end
-                end
-                setStatus("Alvo caiu — aguardando...", Color3.fromRGB(255, 180, 100))
-
-                for _, box in ipairs(prisonParts) do
-                    if box and box.Parent then
-                        box.CFrame = CFrame.new(0, -1000, 0)
-                    end
-                end
-                RunService.Heartbeat:Wait()
-                continue
-            end
-
-            if target then
-                State.ActiveFlingTarget = target
-                local tRoot = getRoot(target)
-                local tHum = getHumanoid(target)
-                local tTorso = getTorso(target)
-
-                if tRoot and tRoot.Parent then
-                    local refPos = (tTorso and tTorso.Position) or tRoot.Position
-
-                    local vel = tRoot.AssemblyLinearVelocity
-                    local velFlat = Vector3.new(vel.X, 0, vel.Z)
-                    local speed = velFlat.Magnitude
-
-                    if speed >= CFG.MoveVelocityThreshold then
-                        State.PrisonMoving = true
-                    elseif speed < CFG.StopVelocityThreshold then
-                        State.PrisonMoving = false
-                        State.PrisonDir = nil
-                    end
-                    local isMoving = State.PrisonMoving
-
-                    if isMoving then
-                        local newDir = getMoveDir(tRoot, tHum)
-                        State.PrisonDir = updateLockedDir(State.PrisonDir, newDir)
-                    end
-                    local moveDir = State.PrisonDir or Vector3.zero
-                    local hasMoveDir = moveDir.Magnitude > 0.1
-
-                    local prediction = Vector3.zero
-                    if speed > 1 then
-                        prediction = velFlat * CFG.PrisonPredictionTime
-                    end
-
-                    local frontOffset = Vector3.zero
-                    if isMoving and hasMoveDir then
-                        frontOffset = moveDir * CFG.PrisonFrontOffset
-                    end
-
-                    local futurePos = refPos + prediction + frontOffset
-
-                    local lookDir
-                    if isMoving and hasMoveDir then
-                        lookDir = moveDir
-                    else
-                        lookDir = tRoot.CFrame.LookVector
-                    end
-
-                    local radius = CFG.PrisonRadius
-
-                    for i, box in ipairs(prisonParts) do
-                        if box and box.Parent then
-                            local angle = offsetAngles[i]
-                            local off = Vector3.new(
-                                math.cos(angle) * radius,
-                                0,
-                                math.sin(angle) * radius
-                            )
-                            box.CFrame = CFrame.new(futurePos + off, futurePos + off + lookDir)
-                            box.AssemblyLinearVelocity = Vector3.zero
-                            box.AssemblyAngularVelocity = Vector3.zero
-                        end
-                    end
-
-                    local mode = isMoving and ("🔒 andando (front " .. CFG.PrisonFrontOffset .. ")") or "🔒 parado"
-                    setStatus("PRISON em " .. target.Name .. " " .. mode, Color3.fromRGB(150, 220, 255))
-                end
-            end
-
-            RunService.Heartbeat:Wait()
-        end
-
-        clearPrison()
-    end)
-end
-
-FrozenBtn.MouseButton1Click:Connect(function()
-    if State.FrozenOrbit then
-        stopFrozenOrbit()
-    else
-        if State.WalkFling then stopWalkFling(State.AllMode) end
-        if State.FloatPlayer then stopFloatPlayer() end
-        if State.FloatTop then stopFloatTop() end
-        if State.ClickFling then stopClickFling() end
-        startFrozenOrbit()
-    end
-end)
-
--- ============ CLICK FLING ============
-local clickFlingLastTarget = nil
-
-local function stopClickFling()
-    State.ClickFling = false
-    State.ClickFlingTarget = nil
-    State.ClickFlingActive = false
-    clickFlingLastTarget = nil
-
-    -- remove a tool
-    if State.ClickFlingTool then
-        pcall(function() State.ClickFlingTool:Destroy() end)
-        State.ClickFlingTool = nil
-    end
-    -- remove qualquer tool de click fling do backpack/character
+local function hasTool(toolName)
     local char = LocalPlayer.Character
     if char then
         for _, c in ipairs(char:GetChildren()) do
-            if c:IsA("Tool") and c.Name == "ClickFlingTool" then
+            if c:IsA("Tool") and c.Name == toolName then return true end
+        end
+    end
+    local bp = LocalPlayer:FindFirstChildOfClass("Backpack")
+    if bp then
+        for _, c in ipairs(bp:GetChildren()) do
+            if c:IsA("Tool") and c.Name == toolName then return true end
+        end
+    end
+    return false
+end
+
+local function removeTool(toolName)
+    local char = LocalPlayer.Character
+    if char then
+        for _, c in ipairs(char:GetChildren()) do
+            if c:IsA("Tool") and c.Name == toolName then
                 pcall(function() c:Destroy() end)
             end
         end
@@ -1914,196 +2013,180 @@ local function stopClickFling()
     local bp = LocalPlayer:FindFirstChildOfClass("Backpack")
     if bp then
         for _, c in ipairs(bp:GetChildren()) do
-            if c:IsA("Tool") and c.Name == "ClickFlingTool" then
+            if c:IsA("Tool") and c.Name == toolName then
                 pcall(function() c:Destroy() end)
             end
         end
     end
-
-    ClickFlingBtn.Text = "CLICK FLING (OFF)"
-    ClickFlingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-    syncHitbox()
-    stopSpectate()
-    cleanupAndReturn()
 end
 
-local function clickFlingStart(target)
+local function removeAllClickTools()
+    for _, n in ipairs(ALL_CLICK_TOOLS) do
+        removeTool(n)
+    end
+    State.ClickFlingTool = nil
+    State.ClickFlingToolName = nil
+end
+
+local function clickToolCleanup()
+    killFlingVelocity()
+    removeNoclip()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hrp and hum then
+        pcall(function() hum.PlatformStand = false end)
+        pcall(function()
+            hrp.AssemblyLinearVelocity  = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+            hrp.Velocity    = Vector3.zero
+            hrp.RotVelocity = Vector3.zero
+        end)
+    end
+
+    safeLandAndFly()
+
+    State.ClickTargetStartY = nil
+    State.ClickAirFrames = 0
+    State.ClickFlingActive = false
+    State.ClickFlingTarget = nil
+    State.ClickFlingMode = nil
+    State.ActiveFlingTarget = nil            -- ← limpa pra câmera voltar pro player
+    syncHitbox()
+    stopSpectate()
+end
+
+-- Config por tool
+local TOOL_DEFS = {
+    ClickFlingTool    = { mode = "fling",    stateKey = "ClickFlingToolActive",    btn = GetClickFlingBtn,     stroke = GCFStroke,  grad = GCFGrad,  labelOn = "CLICK FLING (ON)",     labelOff = "CLICK FLING (OFF)",     colorOn = Color3.fromRGB(60, 255, 100),  colorOff = Color3.fromRGB(255, 60, 200), gradOff = ColorSequence.new(Color3.fromRGB(255, 60, 200), Color3.fromRGB(120, 0, 90)) },
+    ClickFloatTool    = { mode = "float",    stateKey = "ClickFloatToolActive",    btn = GetClickFloatBtn,     stroke = GCF2Stroke, grad = GCF2Grad, labelOn = "CLICK FLOAT (ON)",     labelOff = "CLICK FLOAT (OFF)",     colorOn = Color3.fromRGB(60, 255, 100),  colorOff = Color3.fromRGB(200, 0, 200),  gradOff = ColorSequence.new(Color3.fromRGB(200, 0, 200), Color3.fromRGB(70, 0, 80)) },
+    ClickFloatTopTool = { mode = "floattop", stateKey = "ClickFloatTopToolActive", btn = GetClickFloatTopBtn,  stroke = GCF3Stroke, grad = GCF3Grad, labelOn = "CLICK FLOAT TOP (ON)", labelOff = "CLICK FLOAT TOP (OFF)", colorOn = Color3.fromRGB(60, 255, 100),  colorOff = Color3.fromRGB(255, 100, 0),  gradOff = ColorSequence.new(Color3.fromRGB(255, 100, 0), Color3.fromRGB(90, 30, 0)) },
+}
+
+local function updateToolBtnUI(toolName)
+    local def = TOOL_DEFS[toolName]
+    if not def then return end
+    local isOn = State[def.stateKey]
+    if isOn then
+        def.btn.Text = def.labelOn
+        def.stroke.Color = def.colorOn
+    else
+        def.btn.Text = def.labelOff
+        def.stroke.Color = def.colorOff
+    end
+end
+
+local function clickToolToggle(target, mode, toolName)
     if not target or isDead(target) then return end
 
-    -- se é o mesmo alvo de antes → para (toggle)
-    if State.ClickFlingActive and clickFlingLastTarget == target then
-        State.ClickFlingActive = false
-        State.ClickFlingTarget = nil
-        clickFlingLastTarget = nil
-        killFlingVelocity()
-        removeNoclip()
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hrp and hum then
-            pcall(function() hum.PlatformStand = false end)
-            pcall(function()
-                hrp.AssemblyLinearVelocity  = Vector3.zero
-                hrp.AssemblyAngularVelocity = Vector3.zero
-                hrp.Velocity    = Vector3.zero
-                hrp.RotVelocity = Vector3.zero
-            end)
-        end
-        setStatus("Click Fling — parado em " .. target.Name, Color3.fromRGB(200, 200, 200))
+    if State.ClickFlingActive and State.ClickFlingTarget == target and State.ClickFlingMode == mode then
+        local prevName = target.Name
+        clickToolCleanup()
+        setStatus("Click parado em " .. prevName .. " (safe land + fly)", Color3.fromRGB(200, 200, 200))
         return
     end
 
-    -- se já está flingando outro alvo, troca
     if State.ClickFlingActive then
         killFlingVelocity()
     end
 
     State.ClickFlingActive = true
     State.ClickFlingTarget = target
-    clickFlingLastTarget = target
+    State.ClickFlingMode = mode
+    State.ActiveFlingTarget = target          -- ← faz a câmera ir no alvo clicado
+    State.ClickFloatMoving = false
+    State.ClickFloatDir = nil
+    State.ClickFloatTopMoving = false
+    State.ClickFloatTopDir = nil
+
+    local sRoot = getRoot(target)
+    State.ClickTargetStartY = sRoot and sRoot.Position.Y or nil
+    State.ClickAirFrames = 0
+
     saveMyPosition()
     applyNoclip()
     syncHitbox()
     spectate(target)
 
-    setStatus("CLICK FLING em " .. target.Name, Color3.fromRGB(255, 100, 200))
+    local modeLabel = mode == "fling" and "FLING" or (mode == "float" and "FLOAT" or "FLOAT TOP")
+    setStatus("CLICK " .. modeLabel .. " em " .. target.Name, Color3.fromRGB(255, 100, 200))
 end
 
-local function startClickFling()
-    State.ClickFling = true
-    State.ClickFlingTarget = nil
-    State.ClickFlingActive = false
-    clickFlingLastTarget = nil
-
-    ClickFlingBtn.Text = "CLICK FLING (ON)"
-    ClickFlingBtn.TextColor3 = Color3.fromRGB(255, 150, 220)
-
-    -- cria a Tool
-    local tool = Instance.new("Tool")
-    tool.Name = "ClickFlingTool"
-    tool.RequiresHandle = false
-    tool.CanBeDropped = false
-    tool.ToolTip = "Clique em um jogador pra flingar"
-
-    tool.Activated:Connect(function()
-        -- pega o mouse
-        local mouse = LocalPlayer:GetMouse()
-        if not mouse then return end
-        local mouseTarget = mouse.Target
-        if not mouseTarget then return end
-
-        local model = mouseTarget:FindFirstAncestorOfClass("Model")
-        if not model then return end
-
-        local plr = Players:GetPlayerFromCharacter(model)
-        if plr and plr ~= LocalPlayer then
-            clickFlingStart(plr)
-        else
-            setStatus("Click Fling — clique em um jogador!", Color3.fromRGB(255, 200, 100))
+local function clickToolLoop()
+    while true do
+        local anyActive = State.ClickFlingToolActive or State.ClickFloatToolActive or State.ClickFloatTopToolActive
+        if not anyActive then
+            break
         end
-    end)
 
-    -- coloca no backpack
-    local bp = LocalPlayer:FindFirstChildOfClass("Backpack")
-    if bp then
-        tool.Parent = bp
-    else
-        tool.Parent = LocalPlayer.Character or LocalPlayer
-    end
+        if State.ClickFlingActive and State.ClickFlingTarget and State.ClickFlingMode then
+            local char = LocalPlayer.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                local target = State.ClickFlingTarget
+                local mode = State.ClickFlingMode
 
-    State.ClickFlingTool = tool
+                if hrp and hum then
+                    hum.PlatformStand = true
 
-    setStatus("CLICK FLING ON — use a Tool e clique em alguém!", Color3.fromRGB(255, 150, 220))
+                    if hrp.Position.Y < CFG.VoidY + 15 then
+                        if State.MyOriginalCFrame then
+                            pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
+                        end
+                        killFlingVelocity()
+                        pcall(function()
+                            hrp.AssemblyLinearVelocity  = Vector3.zero
+                            hrp.AssemblyAngularVelocity = Vector3.zero
+                        end)
+                        RunService.Heartbeat:Wait()
+                        continue
+                    end
 
-    -- loop de fling
-    task.spawn(function()
-        while State.ClickFling do
-            if State.ClickFlingActive and State.ClickFlingTarget then
-                local char = LocalPlayer.Character
-                if not char then
-                    LocalPlayer.CharacterAdded:Wait()
-                    task.wait(0.2)
-                    char = LocalPlayer.Character
-                end
-
-                if char then
-                    local hrp = char:FindFirstChild("HumanoidRootPart")
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    local target = State.ClickFlingTarget
-
-                    if hrp and hum then
-                        hum.PlatformStand = true
-
-                        -- self void check
-                        if hrp.Position.Y < CFG.VoidY + 15 then
-                            if State.MyOriginalCFrame then
-                                pcall(function() hrp.CFrame = State.MyOriginalCFrame end)
+                    for _, d in ipairs(char:GetDescendants()) do
+                        if d:IsA("BasePart") and d.Name ~= "__BigHitbox" then
+                            local isTorso = (d.Name == "UpperTorso" or d.Name == "Torso")
+                            if d.CanCollide ~= isTorso then
+                                d.CanCollide = isTorso
                             end
-                            killFlingVelocity()
-                            pcall(function()
-                                hrp.AssemblyLinearVelocity  = Vector3.zero
-                                hrp.AssemblyAngularVelocity = Vector3.zero
-                            end)
+                        end
+                    end
+
+                    if not target or isDead(target) or isPlayerGone(target) then
+                        clickToolCleanup()
+                        setStatus("Click — alvo morreu/saiu (safe land + fly)", Color3.fromRGB(255, 120, 120))
+                        RunService.Heartbeat:Wait()
+                        continue
+                    end
+
+                    local tRoot = getRoot(target)
+                    local tHum = getHumanoid(target)
+                    local tTorso = getTorso(target)
+
+                    if tRoot and tRoot.Parent then
+                        local spiked = checkSpike(target)
+                        if spiked then
+                            clickToolCleanup()
+                            setStatus("SPIKE — click parado (safe land + fly). Clique denovo pra retomar", Color3.fromRGB(255, 220, 100))
                             RunService.Heartbeat:Wait()
                             continue
                         end
 
-                        -- noclip
-                        for _, d in ipairs(char:GetDescendants()) do
-                            if d:IsA("BasePart") and d.Name ~= "__BigHitbox" and not d.Name:find("__PrisonHitbox") then
-                                local isTorso = (d.Name == "UpperTorso" or d.Name == "Torso")
-                                if d.CanCollide ~= isTorso then
-                                    d.CanCollide = isTorso
-                                end
+                        if mode == "float" or mode == "floattop" then
+                            if isTargetInAir(target, State.ClickTargetStartY) then
+                                State.ClickAirFrames = State.ClickAirFrames + 1
+                            else
+                                State.ClickAirFrames = 0
                             end
-                        end
-
-                        -- alvo morreu / saiu / void → desativa o click fling
-                        if not target or isDead(target) or isPlayerGone(target) then
-                            State.ClickFlingActive = false
-                            State.ClickFlingTarget = nil
-                            clickFlingLastTarget = nil
-                            killFlingVelocity()
-                            removeNoclip()
-                            pcall(function() hum.PlatformStand = false end)
-                            pcall(function()
-                                hrp.AssemblyLinearVelocity  = Vector3.zero
-                                hrp.AssemblyAngularVelocity = Vector3.zero
-                            end)
-                            setStatus("Click Fling — alvo morreu/saiu", Color3.fromRGB(255, 120, 120))
-                            RunService.Heartbeat:Wait()
-                            continue
-                        end
-
-                        local tRoot = getRoot(target)
-                        local tHum = getHumanoid(target)
-                        local tTorso = getTorso(target)
-
-                        if tRoot and tRoot.Parent then
-                            -- 🎯 SPIKE detectado → para o fling e não retoma sozinho
-                            local spiked = checkSpike(target)
-                            if spiked then
-                                if State.ClickFlingActive then
-                                    State.ClickFlingActive = false
-                                    State.ClickFlingTarget = nil
-                                    clickFlingLastTarget = nil
-                                    killFlingVelocity()
-                                    removeNoclip()
-                                    pcall(function() hum.PlatformStand = false end)
-                                    pcall(function()
-                                        hrp.AssemblyLinearVelocity  = Vector3.zero
-                                        hrp.AssemblyAngularVelocity = Vector3.zero
-                                        hrp.Velocity    = Vector3.zero
-                                        hrp.RotVelocity = Vector3.zero
-                                    end)
-                                    setStatus("Click Fling — SPIKE detectado, parado em " .. target.Name .. " (clique nele de novo pra retomar)", Color3.fromRGB(255, 220, 100))
-                                end
+                            if State.ClickAirFrames >= CFG.AirMinFrames then
+                                clickToolCleanup()
+                                setStatus("Alvo no ar — click " .. mode .. " parado (safe land + fly)", Color3.fromRGB(255, 180, 100))
                                 RunService.Heartbeat:Wait()
                                 continue
                             end
+                        end
 
-                            -- fling normal
+                        if mode == "fling" then
                             local targetVel = tRoot.AssemblyLinearVelocity.Magnitude
                             local isMoving = targetVel >= CFG.MoveVelocityThreshold
                             local moveDir = getMoveDir(tRoot, tHum)
@@ -2139,25 +2222,273 @@ local function startClickFling()
                                 bv.Parent = hrp
                             end
                             bv.Velocity = direcao * CFG.FlingVelocity
+
+                        elseif mode == "float" then
+                            if not State.clickFloatStepUpState then State.clickFloatStepUpState = false end
+                            State.clickFloatStepUpState = not State.clickFloatStepUpState
+                            local yOffset = State.clickFloatStepUpState and CFG.FloatStepUp or 0
+
+                            local refPos = (tTorso and tTorso.Position) or tRoot.Position
+
+                            local targetVel = tRoot.AssemblyLinearVelocity.Magnitude
+                            if targetVel >= CFG.MoveVelocityThreshold then
+                                State.ClickFloatMoving = true
+                            elseif targetVel < CFG.StopVelocityThreshold then
+                                State.ClickFloatMoving = false
+                                State.ClickFloatDir = nil
+                            end
+                            local isMoving = State.ClickFloatMoving
+
+                            if isMoving then
+                                local newDir = getMoveDir(tRoot, tHum)
+                                State.ClickFloatDir = updateLockedDir(State.ClickFloatDir, newDir)
+                            end
+                            local moveDir = State.ClickFloatDir or Vector3.zero
+                            local hasMoveDir = moveDir.Magnitude > 0.1
+
+                            local velY = tRoot.AssemblyLinearVelocity.Y
+                            local isFalling = velY < CFG.FloatFallThreshold
+                            local isRising = velY > CFG.FloatRisingThreshold
+
+                            local basePos
+                            if isRising and isMoving and hasMoveDir then
+                                basePos = refPos + (moveDir * CFG.FloatFrontOffset) + Vector3.new(0, CFG.FloatRisingOffset, 0)
+                            elseif isRising then
+                                basePos = refPos + Vector3.new(0, CFG.FloatRisingOffset, 0)
+                            elseif isFalling and isMoving and hasMoveDir then
+                                basePos = refPos + (moveDir * CFG.FloatFrontOffset) - Vector3.new(0, CFG.FloatFallOffset, 0)
+                            elseif isFalling then
+                                basePos = refPos - Vector3.new(0, CFG.FloatFallOffset, 0)
+                            elseif isMoving and hasMoveDir then
+                                basePos = refPos + (moveDir * CFG.FloatFrontOffset)
+                            else
+                                basePos = refPos - Vector3.new(0, CFG.FloatOffset, 0)
+                            end
+
+                            local posDest = basePos + Vector3.new(0, yOffset, 0)
+
+                            hrp.CFrame = CFrame.lookAt(posDest, posDest + Vector3.new(0, 1, 0))
+
+                            hrp.Velocity    = Vector3.new(0, CFG.FloatVelocity, 0)
+                            hrp.RotVelocity = Vector3.zero
+
+                            local bv = hrp:FindFirstChild("FlingVelocity")
+                            if not bv then
+                                bv = Instance.new("BodyVelocity")
+                                bv.Name = "FlingVelocity"
+                                bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                                bv.Parent = hrp
+                            end
+                            bv.Velocity = Vector3.new(0, CFG.FloatVelocity, 0)
+
+                        elseif mode == "floattop" then
+                            -- Para automático se a velocidade do alvo passar do limite
+                            local curSpeedTop = tRoot.AssemblyLinearVelocity.Magnitude
+                            if curSpeedTop > CFG.FloatTopStopVelocity then
+                                clickToolCleanup()
+                                setStatus("Alvo em movimento (" .. math.floor(curSpeedTop) .. " > " .. CFG.FloatTopStopVelocity .. ") — click float top parado", Color3.fromRGB(255, 180, 100))
+                                RunService.Heartbeat:Wait()
+                                continue
+                            end
+
+                            if not State.clickFloatTopStepState then State.clickFloatTopStepState = false end
+                            State.clickFloatTopStepState = not State.clickFloatTopStepState
+                            local yOffset = State.clickFloatTopStepState and -CFG.FloatTopStepDown or 0
+
+                            local refPos = (tTorso and tTorso.Position) or tRoot.Position
+
+                            local targetVel = tRoot.AssemblyLinearVelocity.Magnitude
+                            if targetVel >= CFG.MoveVelocityThreshold then
+                                State.ClickFloatTopMoving = true
+                            elseif targetVel < CFG.StopVelocityThreshold then
+                                State.ClickFloatTopMoving = false
+                                State.ClickFloatTopDir = nil
+                            end
+                            local isMoving = State.ClickFloatTopMoving
+
+                            if isMoving then
+                                local newDir = getMoveDir(tRoot, tHum)
+                                State.ClickFloatTopDir = updateLockedDir(State.ClickFloatTopDir, newDir)
+                            end
+                            local moveDir = State.ClickFloatTopDir or Vector3.zero
+                            local hasMoveDir = moveDir.Magnitude > 0.1
+
+                            local velY = tRoot.AssemblyLinearVelocity.Y
+                            local isRising = velY > CFG.FloatRisingThreshold
+
+                            local basePos
+                            if isRising and isMoving and hasMoveDir then
+                                basePos = refPos + (moveDir * CFG.FloatTopFrontOffset) + Vector3.new(0, CFG.FloatRisingOffset, 0)
+                            elseif isRising then
+                                basePos = refPos + Vector3.new(0, CFG.FloatRisingOffset, 0)
+                            elseif isMoving and hasMoveDir then
+                                basePos = refPos + (moveDir * CFG.FloatTopFrontOffset) + Vector3.new(0, CFG.FloatTopOffset, 0)
+                            else
+                                basePos = refPos + Vector3.new(0, CFG.FloatTopOffset, 0)
+                            end
+
+                            local posDest = basePos + Vector3.new(0, yOffset, 0)
+
+                            hrp.CFrame = CFrame.lookAt(posDest, posDest + Vector3.new(0, -1, 0))
+
+                            hrp.Velocity    = Vector3.new(0, CFG.FloatTopVelocity, 0)
+                            hrp.RotVelocity = Vector3.zero
+
+                            local bv = hrp:FindFirstChild("FlingVelocity")
+                            if not bv then
+                                bv = Instance.new("BodyVelocity")
+                                bv.Name = "FlingVelocity"
+                                bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                                bv.Parent = hrp
+                            end
+                            bv.Velocity = Vector3.new(0, CFG.FloatTopVelocity, 0)
                         end
                     end
                 end
             end
-
-            RunService.Heartbeat:Wait()
         end
+        RunService.Heartbeat:Wait()
+    end
+end
+
+local _clickLoopRunning = false
+local function ensureClickLoop()
+    if _clickLoopRunning then return end
+    _clickLoopRunning = true
+    task.spawn(function()
+        clickToolLoop()
+        _clickLoopRunning = false
     end)
 end
 
-ClickFlingBtn.MouseButton1Click:Connect(function()
-    if State.ClickFling then
-        stopClickFling()
+local function giveClickTool(toolName, mode, silent)
+    local def = TOOL_DEFS[toolName]
+    if not def then return end
+
+    if hasTool(toolName) then
+        if not silent then
+            setStatus("Você já tem a " .. toolName .. "!", Color3.fromRGB(255, 200, 100))
+        end
+        return
+    end
+    removeTool(toolName)
+
+    local tool = Instance.new("Tool")
+    tool.Name = toolName
+    tool.RequiresHandle = false
+    tool.CanBeDropped = false
+
+    local tooltip = "Clique em um jogador"
+    if mode == "fling" then tooltip = "Click Fling — clique num player"
+    elseif mode == "float" then tooltip = "Click Float — clique num player"
+    elseif mode == "floattop" then tooltip = "Click Float Top — clique num player" end
+    tool.ToolTip = tooltip
+
+    tool.Activated:Connect(function()
+        local mouse = LocalPlayer:GetMouse()
+        if not mouse or not mouse.Target then return end
+        local model = mouse.Target:FindFirstAncestorOfClass("Model")
+        if not model then return end
+        local plr = Players:GetPlayerFromCharacter(model)
+        if plr and plr ~= LocalPlayer then
+            clickToolToggle(plr, mode, toolName)
+        else
+            setStatus("Clique em um jogador!", Color3.fromRGB(255, 200, 100))
+        end
+    end)
+
+    tool.Destroying:Connect(function()
+        if State.ClickFlingTool == tool then
+            State.ClickFlingTool = nil
+            State.ClickFlingToolName = nil
+            if not (State.ClickFlingToolActive or State.ClickFloatToolActive or State.ClickFloatTopToolActive) then
+                clickToolCleanup()
+            end
+        end
+    end)
+
+    local bp = LocalPlayer:FindFirstChildOfClass("Backpack")
+    if bp then
+        tool.Parent = bp
     else
-        if State.WalkFling then stopWalkFling(State.AllMode) end
-        if State.FloatPlayer then stopFloatPlayer() end
-        if State.FloatTop then stopFloatTop() end
-        if State.FrozenOrbit then stopFrozenOrbit() end
-        startClickFling()
+        tool.Parent = LocalPlayer.Character or LocalPlayer
+    end
+
+    State.ClickFlingTool = tool
+    State.ClickFlingToolName = toolName
+
+    ensureClickLoop()
+
+    if not silent then
+        setStatus(toolName .. " recebida! Equipe e clique num player", Color3.fromRGB(255, 150, 220))
+    end
+end
+
+local function setClickToolToggled(toolName)
+    local def = TOOL_DEFS[toolName]
+    if not def then return end
+
+    local newState = not State[def.stateKey]
+    State[def.stateKey] = newState
+
+    if newState then
+        giveClickTool(toolName, def.mode, true)
+        setStatus(toolName .. " ATIVADO — mantém mesmo após morrer", Color3.fromRGB(120, 255, 150))
+    else
+        removeTool(toolName)
+        if State.ClickFlingToolName == toolName then
+            State.ClickFlingTool = nil
+            State.ClickFlingToolName = nil
+        end
+        if not (State.ClickFlingToolActive or State.ClickFloatToolActive or State.ClickFloatTopToolActive) then
+            clickToolCleanup()
+        end
+        setStatus(toolName .. " DESATIVADO — Tool removida", Color3.fromRGB(255, 150, 150))
+    end
+
+    updateToolBtnUI(toolName)
+end
+
+GetClickFlingBtn.MouseButton1Click:Connect(function() setClickToolToggled("ClickFlingTool") end)
+GetClickFloatBtn.MouseButton1Click:Connect(function() setClickToolToggled("ClickFloatTool") end)
+GetClickFloatTopBtn.MouseButton1Click:Connect(function() setClickToolToggled("ClickFloatTopTool") end)
+
+for toolName, _ in pairs(TOOL_DEFS) do
+    updateToolBtnUI(toolName)
+end
+
+-- Loop ensurer: re-giva a tool se sumir
+task.spawn(function()
+    while ScreenGui.Parent do
+        if State.ClickFlingToolActive and not hasTool("ClickFlingTool") then
+            giveClickTool("ClickFlingTool", "fling", true)
+            ensureClickLoop()
+        end
+        if State.ClickFloatToolActive and not hasTool("ClickFloatTool") then
+            giveClickTool("ClickFloatTool", "float", true)
+            ensureClickLoop()
+        end
+        if State.ClickFloatTopToolActive and not hasTool("ClickFloatTopTool") then
+            giveClickTool("ClickFloatTopTool", "floattop", true)
+            ensureClickLoop()
+        end
+        task.wait(CFG.ToolEnsureInterval)
+    end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    if State.ClickFlingToolActive or State.ClickFloatToolActive or State.ClickFloatTopToolActive then
+        task.wait(0.5)
+        if State.ClickFlingToolActive and not hasTool("ClickFlingTool") then
+            giveClickTool("ClickFlingTool", "fling", true)
+        end
+        if State.ClickFloatToolActive and not hasTool("ClickFloatTool") then
+            giveClickTool("ClickFloatTool", "float", true)
+        end
+        if State.ClickFloatTopToolActive and not hasTool("ClickFloatTopTool") then
+            giveClickTool("ClickFloatTopTool", "floattop", true)
+        end
+        ensureClickLoop()
     end
 end)
 
@@ -2173,8 +2504,6 @@ AllBtn.MouseButton1Click:Connect(function()
         if State.WalkFling then stopWalkFling(true) end
         if State.FloatPlayer then stopFloatPlayer() end
         if State.FloatTop then stopFloatTop() end
-        if State.FrozenOrbit then stopFrozenOrbit() end
-        if State.ClickFling then stopClickFling() end
 
         removeBigHitbox()
         syncHitbox()
@@ -2211,60 +2540,9 @@ AllBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ════════════════════════════════════════════════════════════
--- ═══════════════ CONFIGS — TRADUZIDO EM PT-BR ═══════════════
--- ════════════════════════════════════════════════════════════
-CFG = {
-
-    FrontOffset      = 10,
-    FlingVelocity    = 10000,
-    Fling2sDuration  = 1.3,
-    MoveVelocityThreshold = 16,
-    StopVelocityThreshold = 3,
-
-    AllSwapTime      = 3.0,
-    AllFlyThreshold  = 20,
-
-    SpikeMaxDuration      = 4.0,
-    SpikeResumeMinHeight  = 50,
-    SpikeResumeMaxFallSpeed = -50,
-
-    BigHitboxSize    = 28,
-    BigHitboxAlpha   = 0.35,
-
-    FloatOffset        = 0.5,
-    FloatVelocity      = 250,
-    FloatStepUp        = 1.0,
-    FloatFrontOffset   = 10,
-    FloatFallOffset    = 9,
-    FloatFallThreshold = -10,
-
-    FloatRisingOffset    = 13,
-    FloatRisingThreshold = 5,
-
-    FloatTopOffset      = 1.0,
-    FloatTopVelocity    = -250,
-    FloatTopStepDown    = 1.0,
-    FloatTopFrontOffset = 14.0,
-
-    PrisonRadius        = 2.0,
-    PrisonPartSize      = 4.5,
-    PrisonPartCount     = 6,
-    PrisonAlpha         = 0.55,
-    PrisonPredictionTime = 0.15,
-    PrisonFrontOffset   = 14.0,
-
-    DirectionChangeThreshold = 60,
-
-    VoidY            = -80,
-    SpikeThreshold   = 320,
-
-    Noclip           = true,
-}
-
 -- ============ MINIMIZAR ============
 local minimized = false
-local FULL_SIZE = UDim2.new(0, 260, 0, 434)
+local FULL_SIZE = UDim2.new(0, 260, 0, 396)
 local MIN_SIZE  = UDim2.new(0, 260, 0, 34)
 
 MinBtn.MouseButton1Click:Connect(function()
@@ -2283,8 +2561,11 @@ CloseBtn.MouseButton1Click:Connect(function()
     stopWalkFling(false)
     stopFloatPlayer()
     stopFloatTop()
-    if State.FrozenOrbit then stopFrozenOrbit() end
-    if State.ClickFling then stopClickFling() end
+    State.ClickFlingToolActive = false
+    State.ClickFloatToolActive = false
+    State.ClickFloatTopToolActive = false
+    clickToolCleanup()
+    removeAllClickTools()
     removeBigHitbox()
     restoreMyCamera()
 
@@ -2303,7 +2584,7 @@ task.spawn(function()
     task.wait(0.05)
     TweenService:Create(MainFrame, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = FULL_SIZE,
-        Position = UDim2.new(0.5, -130, 0.5, -217),
+        Position = UDim2.new(0.5, -130, 0.5, -198),
         BackgroundTransparency = 0.25
     }):Play()
     TweenService:Create(Stroke, TweenInfo.new(0.5), {Transparency = 0.2}):Play()
@@ -2338,15 +2619,6 @@ LocalPlayer.CharacterAdded:Connect(function()
         task.wait(0.5)
         applyBigHitbox()
     end
-    -- recria a tool se click fling estiver ativo e morrer
-    if State.ClickFling and not State.ClickFlingTool then
-        task.wait(0.5)
-        if State.ClickFling then
-            stopClickFling()
-            task.wait(0.1)
-            startClickFling()
-        end
-    end
 end)
 
-print("[willnzx.mt] GUI carregada — CLICK FLING adicionado")
+print("[willnzx.mt] GUI carregada — Float Top para em velocidade > 30")
